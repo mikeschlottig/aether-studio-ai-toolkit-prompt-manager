@@ -10,9 +10,10 @@ import {
   Sun,
   Copy,
   AlertTriangle,
-  Lock
+  Lock,
+  Keyboard
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,9 +33,20 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useTheme } from '@/hooks/use-theme'
 import { chatService } from '@/lib/chat'
+import { useAppStore } from '@/lib/store'
 import { toast } from '@/components/ui/sonner'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 export function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
+  const shortcuts = useAppStore(s => s.shortcuts)
+  const updateShortcut = useAppStore(s => s.updateShortcut)
   const handleClearAll = async () => {
     try {
       const res = await chatService.clearAllSessions()
@@ -46,6 +58,11 @@ export function SettingsPage() {
     } catch (error) {
       toast.error('An unexpected error occurred during purge')
     }
+  }
+  const handleKeyChange = (id: string, e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    updateShortcut(id, e.key.toLowerCase())
+    toast.info(`Shortcut updated to: ${e.key}`)
   }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -61,6 +78,9 @@ export function SettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="appearance" className="w-full justify-start data-[state=active]:bg-secondary rounded-xl h-11 px-4 text-sm font-medium">
               <Palette className="w-4 h-4 mr-3 opacity-70" /> Appearance
+            </TabsTrigger>
+            <TabsTrigger value="shortcuts" className="w-full justify-start data-[state=active]:bg-secondary rounded-xl h-11 px-4 text-sm font-medium">
+              <Keyboard className="w-4 h-4 mr-3 opacity-70" /> Shortcuts
             </TabsTrigger>
             <TabsTrigger value="api" className="w-full justify-start data-[state=active]:bg-secondary rounded-xl h-11 px-4 text-sm font-medium">
               <Key className="w-4 h-4 mr-3 opacity-70" /> API Gateway
@@ -102,15 +122,42 @@ export function SettingsPage() {
                     </div>
                     <Switch defaultChecked />
                   </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border border-border/50">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold">Anonymous Telemetry</p>
-                      <p className="text-xs text-muted-foreground">Help us optimize agent latency via anonymized traces.</p>
-                    </div>
-                    <Switch />
-                  </div>
                 </div>
               </section>
+            </TabsContent>
+            <TabsContent value="shortcuts" className="mt-0 focus-visible:ring-0 space-y-6">
+              <div>
+                <h3 className="text-lg font-bold">Keyboard Shortcuts</h3>
+                <p className="text-sm text-muted-foreground">Customise system keys to match your preferred workflow.</p>
+              </div>
+              <Card className="border-none shadow-soft overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Action</TableHead>
+                      <TableHead className="w-[200px]">Binding (Key)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shortcuts.map((shortcut) => (
+                      <TableRow key={shortcut.id}>
+                        <TableCell className="font-medium">{shortcut.action}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs opacity-50 uppercase font-bold">Cmd +</span>
+                            <Input 
+                              className="w-12 h-8 text-center uppercase font-bold bg-muted/50 border-none" 
+                              value={shortcut.key} 
+                              onKeyDown={(e) => handleKeyChange(shortcut.id, e)}
+                              readOnly 
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             </TabsContent>
             <TabsContent value="appearance" className="space-y-10 mt-0 focus-visible:ring-0">
               <section className="space-y-6">
@@ -128,7 +175,6 @@ export function SettingsPage() {
                     </div>
                     <div>
                       <p className="font-bold">Aether Light</p>
-                      <p className="text-xs text-muted-foreground">High contrast for daylight focus sessions.</p>
                     </div>
                   </button>
                   <button
@@ -140,7 +186,6 @@ export function SettingsPage() {
                     </div>
                     <div>
                       <p className="font-bold">Aether Obsidian</p>
-                      <p className="text-xs text-muted-foreground">Muted tones for deep work and night mode.</p>
                     </div>
                   </button>
                 </div>
@@ -150,61 +195,38 @@ export function SettingsPage() {
               <section className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold">Data Sovereignty</h3>
-                  <p className="text-sm text-muted-foreground">Manage your session data and access permissions.</p>
                 </div>
-                <Card className="border-destructive/20 bg-destructive/5 overflow-hidden border">
+                <Card className="border-destructive/20 bg-destructive/5 border">
                   <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <div className="flex gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center shrink-0">
-                        <AlertTriangle className="w-6 h-6 text-destructive" />
-                      </div>
+                      <AlertTriangle className="w-12 h-12 text-destructive shrink-0" />
                       <div>
                         <p className="text-sm font-bold">Purge All Sessions</p>
-                        <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                          Permanently delete every chat session from the AppController database. This action is irreversible.
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 max-w-sm">Permanently delete every chat session. Irreversible.</p>
                       </div>
                     </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="rounded-full px-6 shrink-0">Execute Purge</Button>
+                        <Button variant="destructive" className="rounded-full px-6">Execute Purge</Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will wipe your entire conversation history across all agents. This data cannot be recovered.
-                          </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Confirm Deletion
-                          </AlertDialogAction>
+                          <AlertDialogAction onClick={handleClearAll}>Confirm Deletion</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
                   </CardContent>
                 </Card>
-                <div className="p-6 rounded-2xl border bg-muted/20 flex items-center justify-between gap-4">
-                  <div className="flex gap-4">
-                    <Lock className="w-5 h-5 text-indigo-500 opacity-70" />
-                    <div>
-                      <p className="text-sm font-bold">Advanced Encryption</p>
-                      <p className="text-xs text-muted-foreground">Workspace data is encrypted using standard AES-256 protocols at rest.</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Verified</Badge>
-                </div>
               </section>
             </TabsContent>
             <TabsContent value="api" className="space-y-8 mt-0 focus-visible:ring-0">
               <section className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-bold">Infrastructure Keys</h3>
-                    <p className="text-sm text-muted-foreground">Credentials managed via Cloudflare Secrets.</p>
-                  </div>
+                  <h3 className="text-lg font-bold">Infrastructure Keys</h3>
                   <Button variant="outline" size="sm" className="rounded-xl h-9 border-indigo-500/20 text-indigo-500 bg-indigo-500/5">
                     <Plus className="w-3.5 h-3.5 mr-2" /> Add Key
                   </Button>
@@ -212,22 +234,17 @@ export function SettingsPage() {
                 <Card className="border-none shadow-soft overflow-hidden">
                   <div className="divide-y border-t">
                     {[
-                      { name: 'OpenAI (Proxy)', key: 'sk-proj-•••••••••••••7a2', lastUsed: '2h ago' },
-                      { name: 'Aether Edge Runtime', key: 'cf-ai-•••••••••••••0x1', lastUsed: 'Now' },
-                      { name: 'SerpAPI Discovery', key: 'serp-•••••••••••••9b4', lastUsed: '1d ago' },
+                      { name: 'OpenAI (Proxy)', key: 'sk-proj-•••••••••••••7a2' },
+                      { name: 'Aether Edge Runtime', key: 'cf-ai-•••••••••••••0x1' },
                     ].map((api) => (
-                      <div key={api.name} className="p-5 flex items-center justify-between bg-card">
-                        <div className="space-y-1">
+                      <div key={api.name} className="p-5 flex items-center justify-between bg-card group">
+                        <div>
                           <p className="text-sm font-bold">{api.name}</p>
-                          <div className="flex items-center gap-2">
-                             <code className="text-[11px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{api.key}</code>
-                             <span className="text-[10px] text-muted-foreground/50 italic">Used {api.lastUsed}</span>
-                          </div>
+                          <code className="text-[11px] text-muted-foreground">{api.key}</code>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl"><Copy className="w-4 h-4 opacity-50" /></Button>
-                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-destructive"><Trash2 className="w-4 h-4 opacity-50" /></Button>
-                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(api.key); toast.success('Key copied'); }}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
                       </div>
                     ))}
                   </div>

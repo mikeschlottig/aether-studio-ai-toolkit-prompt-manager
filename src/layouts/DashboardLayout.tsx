@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { useHotkeys } from 'react-hotkeys-hook'
-import { SidebarProvider, SidebarInset, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
@@ -16,12 +16,15 @@ export function DashboardLayout() {
   const setCommandPaletteOpen = useAppStore(s => s.setCommandPaletteOpen)
   const isCommandPaletteOpen = useAppStore(s => s.isCommandPaletteOpen)
   const shortcuts = useAppStore(s => s.shortcuts)
+  const initialize = useAppStore(s => s.initialize)
   const getShortcutKey = (id: string) => shortcuts.find(s => s.id === id)?.key || ''
-  // Global Shortcuts
+  useEffect(() => {
+    initialize()
+  }, [initialize])
   useHotkeys(`mod+${getShortcutKey('command-palette')}`, (e) => {
     e.preventDefault()
     setCommandPaletteOpen(!isCommandPaletteOpen)
-  }, { enableOnForm: true })
+  }, { enableOnFormTags: true })
   useHotkeys(`mod+${getShortcutKey('new-chat')}`, (e) => {
     e.preventDefault()
     chatService.newSession()
@@ -41,7 +44,7 @@ export function DashboardLayout() {
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/app">Studio</BreadcrumbLink>
                 </BreadcrumbItem>
-                {pathSegments.slice(1).map((segment, index) => (
+                {pathSegments.slice(1).map((segment) => (
                   <React.Fragment key={segment}>
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>

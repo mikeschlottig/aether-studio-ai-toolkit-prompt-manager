@@ -37,12 +37,14 @@ export interface Shortcut {
 }
 interface AppState {
   isCommandPaletteOpen: boolean;
+  isHydrated: boolean;
   prompts: Prompt[];
   scripts: Script[];
   skills: Skill[];
   customTools: CustomTool[];
   shortcuts: Shortcut[];
   setCommandPaletteOpen: (open: boolean) => void;
+  initialize: () => Promise<void>;
   addPrompt: (prompt: Omit<Prompt, 'id' | 'updatedAt'>) => void;
   updatePrompt: (id: string, updates: Partial<Prompt>) => void;
   deletePrompt: (id: string) => void;
@@ -57,47 +59,25 @@ interface AppState {
   deleteCustomTool: (id: string) => void;
   updateShortcut: (id: string, key: string) => void;
 }
+const syncWithServer = async (endpoint: string, data: any) => {
+  try {
+    await fetch(`/api/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  } catch (e) {
+    console.error(`Failed to sync ${endpoint}`, e);
+  }
+};
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isCommandPaletteOpen: false,
-      prompts: [
-        {
-          id: '1',
-          name: 'Senior UI Architect',
-          content: 'You are an expert UI/UX architect with 15 years of experience in React and Tailwind CSS...',
-          tags: ['System', 'Design'],
-          version: 'v1.4',
-          updatedAt: Date.now() - 7200000,
-        },
-        {
-          id: '2',
-          name: 'SQL Query Optimizer',
-          content: 'Analyze the following SQL query for performance bottlenecks and suggest optimizations...',
-          tags: ['DevTools', 'Database'],
-          version: 'v1.0',
-          updatedAt: Date.now() - 86400000,
-        },
-      ],
-      scripts: [
-        {
-          id: '1',
-          name: 'Data Processor',
-          code: 'def process_data(data):\n    return [x * 2 for x in data if x > 0]',
-          language: 'python',
-          description: 'Simple multiplier filter for numeric arrays.',
-          updatedAt: Date.now() - 3600000,
-        },
-      ],
-      skills: [
-        {
-          id: '1',
-          name: 'Emotional Intelligence',
-          description: 'Detects and adapts to the users emotional state in conversation.',
-          capability: 'analyze_sentiment_and_adapt_tone()',
-          updatedAt: Date.now(),
-        }
-      ],
+      isHydrated: false,
+      prompts: [],
+      scripts: [],
+      skills: [],
       customTools: [],
       shortcuts: [
         { id: 'toggle-sidebar', action: 'Toggle Sidebar', key: 'b' },
@@ -105,24 +85,49 @@ export const useAppStore = create<AppState>()(
         { id: 'command-palette', action: 'Command Palette', key: 'k' },
       ],
       setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
-      addPrompt: (p) => set((state) => ({
-        prompts: [{ ...p, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.prompts]
-      })),
-      updatePrompt: (id, updates) => set((state) => ({
-        prompts: state.prompts.map((p) => p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p)
-      })),
-      deletePrompt: (id) => set((state) => ({
-        prompts: state.prompts.filter((p) => p.id !== id)
-      })),
-      addScript: (s) => set((state) => ({
-        scripts: [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.scripts]
-      })),
-      updateScript: (id, updates) => set((state) => ({
-        scripts: state.scripts.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s)
-      })),
-      deleteScript: (id) => set((state) => ({
-        scripts: state.scripts.filter((s) => s.id !== id)
-      })),
+      initialize: async () => {
+        try {
+          const [pRes, sRes] = await Promise.all([
+            fetch('/api/prompts').then(r => r.json()),
+            fetch('/api/scripts').then(r => r.json())
+          ]);
+          if (pRes.success) set({ prompts: pRes.data });
+          if (sRes.success) set({ scripts: sRes.data });
+          set({ isHydrated: true });
+        } catch (e) {
+          console.error('Initialization failed', e);
+        }
+      },
+      addPrompt: (p) => {
+        const newPrompts = [{ ...p, id: crypto.randomUUID(), updatedAt: Date.now() }, ...get().prompts];
+        set({ prompts: newPrompts });
+        syncWithServer('prompts', newPrompts);
+      },
+      updatePrompt: (id, updates) => {
+        const newPrompts = get().prompts.map((p) => p.id === id ? { ...p, ...updates, updatedAt: Date.now() } : p);
+        set({ prompts: newPrompts });
+        syncWithServer('prompts', newPrompts);
+      },
+      deletePrompt: (id) => {
+        const newPrompts = get().prompts.filter((p) => p.id !== id);
+        set({ prompts: newPrompts });
+        syncWithServer('prompts', newPrompts);
+      },
+      addScript: (s) => {
+        const newScripts = [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...get().scripts];
+        set({ scripts: newScripts });
+        syncWithServer('scripts', newScripts);
+      },
+      updateScript: (id, updates) => {
+        const newScripts = get().scripts.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s);
+        set({ scripts: newScripts });
+        syncWithServer('scripts', newScripts);
+      },
+      deleteScript: (id) => {
+        const newScripts = get().scripts.filter((s) => s.id !== id);
+        set({ scripts: newScripts });
+        syncWithServer('scripts', newScripts);
+      },
       addSkill: (s) => set((state) => ({
         skills: [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.skills]
       })),
@@ -146,7 +151,7 @@ export const useAppStore = create<AppState>()(
       })),
     }),
     {
-      name: 'aether-studio-storage-v3',
+      name: 'aether-studio-persistence-v4',
     }
   )
 );

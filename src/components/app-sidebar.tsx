@@ -1,73 +1,149 @@
-/* This is a demo sidebar. **COMPULSORY** Edit this file to customize the sidebar OR remove it from appLayout OR don't use appLayout at all */
-import React from "react";
-import { Home, Layers, Compass, Star, Settings, LifeBuoy } from "lucide-react";
+import React from "react"
+import { 
+  LayoutDashboard, 
+  MessageSquare, 
+  Library, 
+  ScrollText, 
+  Wrench, 
+  Settings, 
+  UserCircle,
+  ChevronUp,
+  LogOut,
+  CreditCard
+} from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarSeparator,
-  SidebarInput,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuAction,
-  SidebarMenuBadge,
-} from "@/components/ui/sidebar";
-
+  SidebarGroupLabel,
+} from "@/components/ui/sidebar"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu"
+const navigation = {
+  workspace: [
+    { title: "Overview", icon: LayoutDashboard, url: "/app/overview" },
+    { title: "Assistant", icon: MessageSquare, url: "/app/assistant" },
+  ],
+  libraries: [
+    { title: "Prompts", icon: Library, url: "/app/prompts" },
+    { title: "Scripts", icon: ScrollText, url: "/app/scripts" },
+    { title: "Tool Forge", icon: Wrench, url: "/app/tools" },
+  ],
+  system: [
+    { title: "Settings", icon: Settings, url: "/app/settings" },
+  ]
+}
 export function AppSidebar(): JSX.Element {
+  const location = useLocation()
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="h-6 w-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-500" />
-          <span className="text-sm font-medium">Demo Sidebar</span>
-        </div>
-        <SidebarInput placeholder="Search" />
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="h-16 border-b flex items-center px-4">
+        <Link to="/" className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <span className="text-white font-bold">A</span>
+          </div>
+          <span className="text-lg font-bold group-data-[collapsible=icon]:hidden">Aether Studio</span>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive>
-                <a href="#"><Home /> <span>Home</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Layers /> <span>Projects</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuAction>
-                <Star className="size-4" />
-              </SidebarMenuAction>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Compass /> <span>Explore</span></a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {navigation.workspace.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === item.url}
+                  tooltip={item.title}
+                >
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
-
-        <SidebarSeparator />
-
         <SidebarGroup>
-          <SidebarGroupLabel>Quick Links</SidebarGroupLabel>
+          <SidebarGroupLabel>Libraries</SidebarGroupLabel>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Star /> <span>Starred</span></a>
-              </SidebarMenuButton>
-              <SidebarMenuBadge>5</SidebarMenuBadge>
-            </SidebarMenuItem>
+            {navigation.libraries.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === item.url}
+                  tooltip={item.title}
+                >
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarMenu>
+            {navigation.system.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={location.pathname === item.url}
+                  tooltip={item.title}
+                >
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <div className="px-2 text-xs text-muted-foreground">A simple shadcn sidebar</div>
+      <SidebarFooter className="border-t p-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton className="h-12 w-full">
+              <UserCircle className="w-5 h-5" />
+              <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden overflow-hidden">
+                <span className="text-sm font-medium truncate w-full">Alex Rivers</span>
+                <span className="text-2xs text-muted-foreground truncate w-full">alex@aether.studio</span>
+              </div>
+              <ChevronUp className="ml-auto w-4 h-4 group-data-[collapsible=icon]:hidden" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="end" className="w-[200px]">
+            <DropdownMenuItem>
+              <UserCircle className="mr-2 w-4 h-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <CreditCard className="mr-2 w-4 h-4" />
+              Billing
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive">
+              <LogOut className="mr-2 w-4 h-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarFooter>
     </Sidebar>
-  );
+  )
 }

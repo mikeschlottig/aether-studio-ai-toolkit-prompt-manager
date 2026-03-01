@@ -19,11 +19,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/lib/store'
 import { toast } from '@/components/ui/sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { copyToClipboard } from '@/lib/utils'
 export function ScriptLabPage() {
   const scripts = useAppStore(s => s.scripts)
   const addScript = useAppStore(s => s.addScript)
@@ -35,6 +38,7 @@ export function ScriptLabPage() {
   const [consoleOutput, setConsoleOutput] = useState<{msg: string, time: string, id: string}[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false)
   const activeScript = scripts.find(s => s.id === activeScriptId)
   React.useEffect(() => {
     if (activeScript && !isEditing) {
@@ -65,10 +69,16 @@ export function ScriptLabPage() {
     setIsSaving(false)
     toast.success('Script persisted to workspace')
   }
-  const handleCopy = (text: string) => {
-    if (!text) return
-    navigator.clipboard.writeText(text)
-    toast.success('Script copied to clipboard')
+  const handleCreateScript = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('name') as string
+    const language = formData.get('language') as any
+    const description = formData.get('description') as string
+    const code = formData.get('code') as string
+    addScript({ name, language, description, code })
+    toast.success('New script created')
+    setIsNewDialogOpen(false)
   }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,10 +88,7 @@ export function ScriptLabPage() {
             <h1 className="text-3xl font-bold tracking-tight">Script Lab</h1>
             <p className="text-muted-foreground mt-1">IDE for agentic logic and post-processing scripts.</p>
           </div>
-          <Button onClick={() => {
-            addScript({ name: 'Untitled Script', code: '# Start coding...', language: 'python', description: '' })
-            toast.success('New workspace initialized')
-          }} className="bg-indigo-600 hover:bg-indigo-700 rounded-full h-11 px-6 shadow-lg shadow-indigo-500/20">
+          <Button onClick={() => setIsNewDialogOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 rounded-full h-11 px-6 shadow-lg shadow-indigo-500/20">
             <Plus className="w-4 h-4 mr-2" /> New Script
           </Button>
         </div>
@@ -111,11 +118,11 @@ export function ScriptLabPage() {
                       <FileCode className={`w-4 h-4 ${activeScriptId === script.id ? 'text-indigo-500' : 'opacity-40'}`} />
                       <span className="truncate flex-1 text-left">{script.name}</span>
                     </button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => { e.stopPropagation(); handleCopy(script.code); }}
+                      onClick={(e) => { e.stopPropagation(); copyToClipboard(script.code); }}
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </Button>
@@ -142,7 +149,7 @@ export function ScriptLabPage() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button size="icon" variant="ghost" onClick={() => handleCopy(editValue)} className="text-white/50 hover:text-white h-8 w-8">
+                            <Button size="icon" variant="ghost" onClick={() => copyToClipboard(editValue)} className="text-white/50 hover:text-white h-8 w-8">
                               <Copy className="w-4 h-4" />
                             </Button>
                           </TooltipTrigger>
@@ -216,6 +223,46 @@ export function ScriptLabPage() {
             )}
           </div>
         </div>
+        <Sheet open={isNewDialogOpen} onOpenChange={setIsNewDialogOpen}>
+          <SheetContent side="right" className="sm:max-w-xl">
+            <form onSubmit={handleCreateScript} className="h-full flex flex-col">
+              <SheetHeader>
+                <SheetTitle>New Agent Script</SheetTitle>
+                <SheetDescription>Initialize a new logic file in the Script Lab.</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 space-y-6 py-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Script Name</label>
+                  <Input name="name" placeholder="e.g. data_cleaner.py" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Runtime Language</label>
+                  <Select name="language" defaultValue="python">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="python">Python</SelectItem>
+                      <SelectItem value="javascript">JavaScript</SelectItem>
+                      <SelectItem value="sql">SQL</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description</label>
+                  <Input name="description" placeholder="Agent utility description..." />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Initial Code</label>
+                  <Textarea name="code" placeholder="# Start coding..." className="min-h-[200px] font-mono text-xs" />
+                </div>
+              </div>
+              <SheetFooter className="border-t pt-4">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">Create Script</Button>
+              </SheetFooter>
+            </form>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )

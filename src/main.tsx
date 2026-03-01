@@ -20,6 +20,7 @@ import { PromptLibraryPage } from '@/pages/dashboard/PromptLibraryPage'
 import { ScriptLabPage } from '@/pages/dashboard/ScriptLabPage'
 import { ToolForgePage } from '@/pages/dashboard/ToolForgePage'
 import { AgentSkillsPage } from '@/pages/dashboard/AgentSkillsPage'
+import { MCPPage } from '@/pages/dashboard/MCPPage'
 import { SettingsPage } from '@/pages/dashboard/SettingsPage'
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: "prompts", element: <PromptLibraryPage /> },
       { path: "scripts", element: <ScriptLabPage /> },
       { path: "tools", element: <ToolForgePage /> },
+      { path: "mcp", element: <MCPPage /> },
       { path: "agent-skills", element: <AgentSkillsPage /> },
       { path: "settings", element: <SettingsPage /> },
     ]

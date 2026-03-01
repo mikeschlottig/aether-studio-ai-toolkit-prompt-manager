@@ -11,7 +11,8 @@ import {
   LogOut,
   CreditCard,
   Zap,
-  Brain
+  Brain,
+  Server
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -117,6 +118,18 @@ export function AppSidebar(): JSX.Element {
                 <Link to="/app/scripts">
                   <ScrollText className="w-4 h-4" />
                   <span>Scripts</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === "/app/mcp"}
+                tooltip="MCP Servers"
+              >
+                <Link to="/app/mcp">
+                  <Server className="w-4 h-4" />
+                  <span>MCP Servers</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -4,16 +4,13 @@ import {
   Wrench,
   Search,
   ExternalLink,
-  Cpu,
-  Cloud,
-  ShieldCheck,
-  RefreshCcw,
   Plus,
   LayoutGrid,
   Table as TableIcon,
   Copy,
   Trash2,
-  Settings2
+  Settings2,
+  Box
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,8 +21,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore, type CustomTool } from '@/lib/store'
-import { toast } from '@/components/ui/sonner'
+import { toast } from 'sonner'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { copyToClipboard } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -34,34 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-const nativeTools = [
-  { id: 't1', name: 'Web Search', provider: 'Native', status: 'connected', description: 'Real-time web browsing and information retrieval.', icon: Search, config: 'native_search_engine' },
-  { id: 't2', name: 'Weather API', provider: 'Native', status: 'connected', description: 'Global weather conditions and forecasts.', icon: Cloud, config: 'native_weather_provider' },
-  { id: 't3', name: 'D1 Database', provider: 'Cloudflare', status: 'limited', description: 'Query and manage production D1 SQL databases.', icon: Cpu, config: 'cf_d1_binding' },
-]
 export function ToolForgePage() {
   const customTools = useAppStore(s => s.customTools)
   const addCustomTool = useAppStore(s => s.addCustomTool)
   const deleteCustomTool = useAppStore(s => s.deleteCustomTool)
   const [toolsViewMode, setToolsViewMode] = useState<'grid' | 'table'>('grid')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const allTools = [
-    ...nativeTools.map(t => ({ ...t, isNative: true })),
-    ...customTools.map(t => ({ 
-      id: t.id, 
-      name: t.name, 
-      provider: 'Custom', 
-      status: 'connected', 
-      description: `Custom ${t.type.toUpperCase()} tool.`, 
-      icon: Settings2, 
-      config: t.config, 
-      isNative: false 
-    }))
-  ]
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success('Tool configuration copied')
-  }
   const handleAddTool = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -78,21 +54,18 @@ export function ToolForgePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tool Forge</h1>
-            <p className="text-muted-foreground mt-1">Configure and manage AI tool connections and MCP servers.</p>
+            <p className="text-muted-foreground mt-1">Design and test custom AI tools and agentic interfaces.</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="rounded-full h-11 px-6">
-              Connect Server
-            </Button>
-            <Button onClick={() => setIsSheetOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 rounded-full h-11 px-6 shadow-lg shadow-indigo-500/20">
-              <Plus className="w-4 h-4 mr-2" /> Add Tool
-            </Button>
-          </div>
+          <Button onClick={() => setIsSheetOpen(true)} className="bg-indigo-600 hover:bg-indigo-700 rounded-full h-11 px-6 shadow-lg shadow-indigo-500/20">
+            <Plus className="w-4 h-4 mr-2" /> Add Tool
+          </Button>
         </div>
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20 uppercase font-bold text-[10px] tracking-widest px-2.5">Active Tools</Badge>
+              <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20 uppercase font-bold text-[10px] tracking-widest px-2.5">
+                {customTools.length} Custom Tools
+              </Badge>
             </div>
             <ToggleGroup
               type="single"
@@ -109,7 +82,22 @@ export function ToolForgePage() {
             </ToggleGroup>
           </div>
           <AnimatePresence mode="wait">
-            {toolsViewMode === 'grid' ? (
+            {customTools.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-24 bg-muted/10 border-2 border-dashed rounded-3xl"
+              >
+                <Box className="w-12 h-12 text-muted-foreground opacity-20 mb-4" />
+                <h3 className="text-lg font-bold">No custom tools forged</h3>
+                <p className="text-sm text-muted-foreground mb-6 text-center max-w-sm">
+                  Create your own JSON APIs or BAML definitions for Aether agents.
+                </p>
+                <Button onClick={() => setIsSheetOpen(true)} variant="outline" className="rounded-full">
+                  Create First Tool
+                </Button>
+              </motion.div>
+            ) : toolsViewMode === 'grid' ? (
               <motion.div
                 key="grid"
                 initial={{ opacity: 0, y: 10 }}
@@ -117,40 +105,40 @@ export function ToolForgePage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {allTools.map((tool) => (
+                {customTools.map((tool) => (
                   <Card key={tool.id} className="group hover:shadow-md transition-shadow border-none shadow-soft flex flex-col">
                     <CardHeader className="flex flex-row items-center gap-4 pb-2">
                       <div className="w-10 h-10 rounded-lg bg-indigo-500/5 flex items-center justify-center">
-                        <tool.icon className="w-5 h-5 text-indigo-500" />
+                        <Settings2 className="w-5 h-5 text-indigo-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base truncate">{tool.name}</CardTitle>
-                        <CardDescription className="text-xs">{tool.provider}</CardDescription>
+                        <CardDescription className="text-xs uppercase font-bold tracking-tight">{tool.type}</CardDescription>
                       </div>
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${tool.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">{tool.description}</p>
+                      <div className="bg-muted/50 rounded-lg p-3 font-mono text-[10px] mb-4 line-clamp-4 flex-1">
+                        {tool.config}
+                      </div>
                       <div className="flex items-center justify-between mt-auto">
                         <div className="flex gap-1">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(tool.config)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(tool.config)}>
                                   <Copy className="w-4 h-4" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Copy Config</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          {!tool.isNative && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteCustomTool(tool.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteCustomTool(tool.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-lg hover:bg-indigo-500/5 hover:text-indigo-500">
-                          Configure <ExternalLink className="w-3 h-3 ml-2 opacity-50" />
+                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-lg hover:bg-indigo-500/5 hover:text-indigo-500 font-bold">
+                          TEST <ExternalLink className="w-3 h-3 ml-2 opacity-50" />
                         </Button>
                       </div>
                     </CardContent>
@@ -169,42 +157,28 @@ export function ToolForgePage() {
                     <TableHeader>
                       <TableRow className="bg-muted/50">
                         <TableHead>Tool Name</TableHead>
-                        <TableHead>Provider</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[40%]">Config Preview</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="w-[50%]">Config Preview</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {allTools.map((tool) => (
+                      {customTools.map((tool) => (
                         <TableRow key={tool.id} className="group hover:bg-muted/30 transition-colors">
+                          <TableCell className="font-bold">{tool.name}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="w-7 h-7 rounded bg-indigo-500/5 flex items-center justify-center">
-                                <tool.icon className="w-3.5 h-3.5 text-indigo-500" />
-                              </div>
-                              <span className="font-bold text-sm">{tool.name}</span>
-                            </div>
+                            <Badge variant="secondary" className="text-[10px] font-bold uppercase">{tool.type}</Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-[10px] font-medium">{tool.provider}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${tool.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                              <span className="text-xs capitalize">{tool.status}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <code className="text-[10px] font-mono opacity-60 truncate block max-w-[250px]">{tool.config}</code>
+                            <code className="text-[10px] font-mono opacity-60 truncate block max-w-[400px]">{tool.config}</code>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(tool.config)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(tool.config)}>
                                 <Copy className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-8 text-xs">
-                                Configure <ExternalLink className="w-3 h-3 ml-2 opacity-50" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteCustomTool(tool.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </TableCell>
@@ -222,9 +196,9 @@ export function ToolForgePage() {
             <form onSubmit={handleAddTool} className="h-full flex flex-col">
               <SheetHeader>
                 <SheetTitle>Forge New Tool</SheetTitle>
-                <SheetDescription>Define a custom AI capability for your agents.</SheetDescription>
+                <SheetDescription>Define a custom AI capability for your agentic workflows.</SheetDescription>
               </SheetHeader>
-              <div className="flex-1 space-y-6 py-6">
+              <div className="flex-1 space-y-6 py-6 overflow-y-auto">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Tool Name</label>
                   <Input name="name" placeholder="e.g. Analytics Engine" required />
@@ -248,13 +222,13 @@ export function ToolForgePage() {
                   <Textarea
                     name="config"
                     placeholder="Paste tool definition or endpoint configuration..."
-                    className="min-h-[250px] font-mono text-xs"
+                    className="min-h-[300px] font-mono text-xs"
                     required
                   />
                 </div>
               </div>
               <SheetFooter className="border-t pt-4">
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">Add to Forge</Button>
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">Add to Forge</Button>
               </SheetFooter>
             </form>
           </SheetContent>

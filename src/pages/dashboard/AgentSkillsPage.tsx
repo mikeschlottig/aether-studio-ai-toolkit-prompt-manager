@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
   Plus,
   Search,
@@ -9,7 +10,7 @@ import {
   Edit,
   LayoutGrid,
   Table as TableIcon,
-  Code2
+  PlayCircle
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore, type Skill } from '@/lib/store'
+import { chatService } from '@/lib/chat'
 import { toast } from '@/components/ui/sonner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
@@ -29,6 +31,7 @@ import {
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 export function AgentSkillsPage() {
+  const navigate = useNavigate()
   const skills = useAppStore(s => s.skills)
   const addSkill = useAppStore(s => s.addSkill)
   const updateSkill = useAppStore(s => s.updateSkill)
@@ -44,6 +47,11 @@ export function AgentSkillsPage() {
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text)
     toast.success('Capability copied to clipboard')
+  }
+  const handleTestSkill = (capability: string) => {
+    // In a real app we'd inject this into the message input
+    toast.info('Opening test session with skill context')
+    navigate('/app/assistant')
   }
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -99,7 +107,20 @@ export function AgentSkillsPage() {
           />
         </div>
         <AnimatePresence mode="wait">
-          {viewMode === 'grid' ? (
+          {skills.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center py-20 bg-muted/10 border-2 border-dashed rounded-3xl"
+            >
+              <Brain className="w-12 h-12 text-muted-foreground opacity-20 mb-4" />
+              <h3 className="text-lg font-bold">No skills defined</h3>
+              <p className="text-sm text-muted-foreground mb-6">Create your first reusable agent capability.</p>
+              <Button onClick={() => setIsSheetOpen(true)} variant="outline" className="rounded-full">
+                Define First Capability
+              </Button>
+            </motion.div>
+          ) : viewMode === 'grid' ? (
             <motion.div
               key="grid"
               initial={{ opacity: 0, y: 10 }}
@@ -115,6 +136,16 @@ export function AgentSkillsPage() {
                         <Brain className="w-5 h-5" />
                       </div>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500" onClick={() => handleTestSkill(skill.capability)}>
+                                <PlayCircle className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Test Skill</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingSkill(skill); setIsSheetOpen(true); }}>
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -172,16 +203,9 @@ export function AgentSkillsPage() {
                         <TableCell className="text-xs text-muted-foreground">{new Date(skill.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopy(skill.capability)}>
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copy Capability</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500" onClick={() => handleTestSkill(skill.capability)}>
+                              <PlayCircle className="w-4 h-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingSkill(skill); setIsSheetOpen(true); }}>
                               <Edit className="w-4 h-4" />
                             </Button>

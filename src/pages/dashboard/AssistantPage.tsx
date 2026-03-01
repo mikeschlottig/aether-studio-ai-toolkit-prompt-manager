@@ -10,7 +10,9 @@ import {
   Plus,
   MessageSquare,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Library,
+  Check
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,11 +23,18 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { chatService, MODELS } from '@/lib/chat'
+import { useAppStore } from '@/lib/store'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Message, SessionInfo } from '../../../worker/types'
 import { toast } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 export function AssistantPage() {
   const [model, setModel] = useState(MODELS[0].id)
   const [input, setInput] = useState('')
@@ -34,6 +43,8 @@ export function AssistantPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string>(chatService.getSessionId())
   const [isProcessing, setIsProcessing] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const prompts = useAppStore(s => s.prompts)
   const loadSessions = useCallback(async () => {
     const res = await chatService.listSessions()
     if (res.success && res.data) {
@@ -69,11 +80,18 @@ export function AssistantPage() {
     const res = await chatService.sendMessage(userMessage, model)
     if (res.success) {
       await loadMessages()
-      await loadSessions() 
+      await loadSessions()
     } else {
       toast.error('Failed to send message')
     }
     setIsProcessing(false)
+  }
+  const handleInjectPrompt = (content: string) => {
+    const cursor = textareaRef.current?.selectionStart || input.length
+    const newValue = input.slice(0, cursor) + content + input.slice(cursor)
+    setInput(newValue)
+    toast.success('Prompt context injected')
+    textareaRef.current?.focus()
   }
   const handleNewChat = () => {
     chatService.newSession()
@@ -101,7 +119,6 @@ export function AssistantPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-64px)]">
       <div className="flex h-full py-6 gap-6">
-        {/* History Sidebar */}
         <aside className="hidden md:flex flex-col w-72 bg-card border rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 border-b">
             <Button onClick={handleNewChat} className="w-full justify-start bg-indigo-600 hover:bg-indigo-700" size="sm">
@@ -138,7 +155,6 @@ export function AssistantPage() {
             </div>
           </ScrollArea>
         </aside>
-        {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm">
           <header className="p-4 border-b flex items-center justify-between bg-muted/20 backdrop-blur-md">
             <div className="flex items-center gap-3">
@@ -149,10 +165,13 @@ export function AssistantPage() {
                 <h2 className="text-sm font-bold leading-tight truncate">
                   {sessions.find(s => s.id === currentSessionId)?.title || "New Chat"}
                 </h2>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Cloudflare Agent Active
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Agent Engine Active
+                  </p>
+                  <Badge variant="outline" className="h-4 text-[9px] px-1.5 font-bold text-amber-500 border-amber-500/20 bg-amber-500/5">RATELIMITED</Badge>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -183,14 +202,7 @@ export function AssistantPage() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold">Aether Intelligence</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Ready to assist with prompts, scripts, or systems.</p>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {["Optimize UI", "Fix SQL logic", "Python help"].map(q => (
-                        <Button key={q} variant="outline" size="sm" className="rounded-full text-xs" onClick={() => setInput(q)}>
-                          {q}
-                        </Button>
-                      ))}
+                      <p className="text-sm text-muted-foreground mt-1">Select a prompt template or start typing.</p>
                     </div>
                   </motion.div>
                 ) : (
@@ -228,7 +240,34 @@ export function AssistantPage() {
           <footer className="p-4 bg-background border-t space-y-4">
             <div className="max-w-3xl mx-auto space-y-4">
               <div className="relative flex items-end gap-2 bg-muted rounded-2xl p-2 border focus-within:ring-2 ring-indigo-500/20 ring-offset-2 transition-all">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 text-muted-foreground hover:text-indigo-500 rounded-xl">
+                      <Library className="w-5 h-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" side="top" align="start">
+                    <div className="p-3 border-b bg-muted/50">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Prompt Library</p>
+                    </div>
+                    <ScrollArea className="h-64">
+                      <div className="p-1">
+                        {prompts.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => handleInjectPrompt(p.content)}
+                            className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors group"
+                          >
+                            <p className="text-xs font-bold group-hover:text-indigo-500 truncate">{p.name}</p>
+                            <p className="text-[10px] text-muted-foreground line-clamp-1">{p.content}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
                 <Textarea
+                  ref={textareaRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -238,7 +277,7 @@ export function AssistantPage() {
                     }
                   }}
                   placeholder="Ask Aether something..."
-                  className="flex-1 min-h-[44px] max-h-40 bg-transparent border-none focus-visible:ring-0 resize-none py-3 px-3 shadow-none text-sm"
+                  className="flex-1 min-h-[44px] max-h-40 bg-transparent border-none focus-visible:ring-0 resize-none py-3 px-1 shadow-none text-sm"
                 />
                 <Button
                   onClick={handleSend}
@@ -252,7 +291,7 @@ export function AssistantPage() {
               <div className="flex items-center justify-center gap-2 py-1 bg-amber-500/5 rounded-full border border-amber-500/10 max-w-fit mx-auto px-4">
                 <AlertCircle className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  AI usage is monitored. Request limits apply to ensure system stability.
+                  Usage limits are shared. 10 requests / 5 mins suggested for stability.
                 </span>
               </div>
             </div>

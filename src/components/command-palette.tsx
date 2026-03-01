@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -10,10 +10,7 @@ import {
   Plus,
   Moon,
   Sun,
-  Zap,
-  FileCode,
-  StickyNote,
-  Search
+  Zap
 } from 'lucide-react'
 import {
   CommandDialog,
@@ -34,9 +31,6 @@ export function CommandPalette() {
   const { toggleTheme } = useTheme()
   const isOpen = useAppStore(s => s.isCommandPaletteOpen)
   const setOpen = useAppStore(s => s.setCommandPaletteOpen)
-  const prompts = useAppStore(s => s.prompts)
-  const scripts = useAppStore(s => s.scripts)
-  const mcpServers = useAppStore(s => s.mcpServers)
   const handleNavigate = (path: string) => {
     navigate(path)
     setOpen(false)
@@ -54,78 +48,48 @@ export function CommandPalette() {
           Aether Command
         </div>
       </div>
-      <CommandInput placeholder="Search assets, scripts, commands..." />
+      <CommandInput placeholder="Type a command or search..." />
       <CommandList>
-        <CommandEmpty>No matching intelligence found.</CommandEmpty>
-        <CommandGroup heading="System Navigation">
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Navigation">
           <CommandItem onSelect={() => handleNavigate('/app/overview')}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Overview</span>
+            <CommandShortcut>��O</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => handleNavigate('/app/assistant')}>
             <MessageSquare className="mr-2 h-4 w-4" />
             <span>AI Assistant</span>
+            <CommandShortcut>⌘A</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={() => handleNavigate('/app/prompts')}>
+            <Library className="mr-2 h-4 w-4" />
+            <span>Prompt Library</span>
+          </CommandItem>
+          <CommandItem onSelect={() => handleNavigate('/app/scripts')}>
+            <ScrollText className="mr-2 h-4 w-4" />
+            <span>Script Lab</span>
+          </CommandItem>
+          <CommandItem onSelect={() => handleNavigate('/app/agent-skills')}>
+            <Brain className="mr-2 h-4 w-4" />
+            <span>Agent Skills</span>
+          </CommandItem>
+          <CommandItem onSelect={() => handleNavigate('/app/tools')}>
+            <Wrench className="mr-2 h-4 w-4" />
+            <span>Tool Forge</span>
           </CommandItem>
         </CommandGroup>
-        {prompts.length > 0 && (
-          <CommandGroup heading="Deep Search: Prompts">
-            {prompts.map(p => (
-              <CommandItem 
-                key={p.id} 
-                onSelect={() => handleNavigate(`/app/prompts`)}
-                value={`${p.name} ${p.content} ${p.tags.join(' ')}`}
-              >
-                <StickyNote className="mr-2 h-4 w-4 text-orange-500" />
-                <div className="flex flex-col">
-                  <span className="font-medium">{p.name}</span>
-                  <span className="text-[10px] text-muted-foreground line-clamp-1">{p.content.slice(0, 60)}...</span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-        {scripts.length > 0 && (
-          <CommandGroup heading="Deep Search: Scripts">
-            {scripts.map(s => (
-              <CommandItem 
-                key={s.id} 
-                onSelect={() => handleNavigate(`/app/scripts`)}
-                value={`${s.name} ${s.code} ${s.description}`}
-              >
-                <FileCode className="mr-2 h-4 w-4 text-indigo-500" />
-                <div className="flex flex-col">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="text-[10px] text-muted-foreground line-clamp-1">{s.description}</span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-        {mcpServers.length > 0 && (
-          <CommandGroup heading="MCP Infrastructure">
-            {mcpServers.map(server => (
-              <CommandItem key={server.id} onSelect={() => handleNavigate('/app/mcp')}>
-                <Search className="mr-2 h-4 w-4 text-emerald-500" />
-                <span>{server.name} Gateway</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
         <CommandSeparator />
-        <CommandGroup heading="Quick Intelligence Actions">
+        <CommandGroup heading="Actions">
           <CommandItem onSelect={handleNewChat}>
             <Plus className="mr-2 h-4 w-4" />
-            <span>Initialize New Session</span>
+            <span>New Chat Session</span>
             <CommandShortcut>⌘N</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => { toggleTheme(); setOpen(false); }}>
             <Sun className="mr-2 h-4 w-4 dark:hidden" />
             <Moon className="mr-2 h-4 w-4 hidden dark:block" />
-            <span>Toggle UI Theme</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleNavigate('/app/tools')}>
-            <Wrench className="mr-2 h-4 w-4" />
-            <span>Open Tool Forge</span>
+            <span>Toggle Theme</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

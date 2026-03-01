@@ -12,7 +12,8 @@ import {
   Sun,
   Zap,
   FileCode,
-  StickyNote
+  StickyNote,
+  Search
 } from 'lucide-react'
 import {
   CommandDialog,
@@ -35,6 +36,7 @@ export function CommandPalette() {
   const setOpen = useAppStore(s => s.setCommandPaletteOpen)
   const prompts = useAppStore(s => s.prompts)
   const scripts = useAppStore(s => s.scripts)
+  const mcpServers = useAppStore(s => s.mcpServers)
   const handleNavigate = (path: string) => {
     navigate(path)
     setOpen(false)
@@ -52,10 +54,10 @@ export function CommandPalette() {
           Aether Command
         </div>
       </div>
-      <CommandInput placeholder="Search everything..." />
+      <CommandInput placeholder="Search assets, scripts, commands..." />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Navigation">
+        <CommandEmpty>No matching intelligence found.</CommandEmpty>
+        <CommandGroup heading="System Navigation">
           <CommandItem onSelect={() => handleNavigate('/app/overview')}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Overview</span>
@@ -66,40 +68,64 @@ export function CommandPalette() {
           </CommandItem>
         </CommandGroup>
         {prompts.length > 0 && (
-          <CommandGroup heading="Prompts">
+          <CommandGroup heading="Deep Search: Prompts">
             {prompts.map(p => (
-              <CommandItem key={p.id} onSelect={() => handleNavigate(`/app/prompts`)}>
+              <CommandItem 
+                key={p.id} 
+                onSelect={() => handleNavigate(`/app/prompts`)}
+                value={`${p.name} ${p.content} ${p.tags.join(' ')}`}
+              >
                 <StickyNote className="mr-2 h-4 w-4 text-orange-500" />
-                <span>{p.name}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-[10px] text-muted-foreground line-clamp-1">{p.content.slice(0, 60)}...</span>
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
         {scripts.length > 0 && (
-          <CommandGroup heading="Scripts">
+          <CommandGroup heading="Deep Search: Scripts">
             {scripts.map(s => (
-              <CommandItem key={s.id} onSelect={() => handleNavigate(`/app/scripts`)}>
+              <CommandItem 
+                key={s.id} 
+                onSelect={() => handleNavigate(`/app/scripts`)}
+                value={`${s.name} ${s.code} ${s.description}`}
+              >
                 <FileCode className="mr-2 h-4 w-4 text-indigo-500" />
-                <span>{s.name}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{s.name}</span>
+                  <span className="text-[10px] text-muted-foreground line-clamp-1">{s.description}</span>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+        {mcpServers.length > 0 && (
+          <CommandGroup heading="MCP Infrastructure">
+            {mcpServers.map(server => (
+              <CommandItem key={server.id} onSelect={() => handleNavigate('/app/mcp')}>
+                <Search className="mr-2 h-4 w-4 text-emerald-500" />
+                <span>{server.name} Gateway</span>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
         <CommandSeparator />
-        <CommandGroup heading="Quick Actions">
+        <CommandGroup heading="Quick Intelligence Actions">
           <CommandItem onSelect={handleNewChat}>
             <Plus className="mr-2 h-4 w-4" />
-            <span>New Chat Session</span>
+            <span>Initialize New Session</span>
             <CommandShortcut>⌘N</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => { toggleTheme(); setOpen(false); }}>
             <Sun className="mr-2 h-4 w-4 dark:hidden" />
             <Moon className="mr-2 h-4 w-4 hidden dark:block" />
-            <span>Toggle Appearance</span>
+            <span>Toggle UI Theme</span>
           </CommandItem>
           <CommandItem onSelect={() => handleNavigate('/app/tools')}>
             <Wrench className="mr-2 h-4 w-4" />
-            <span>Tool Forge Settings</span>
+            <span>Open Tool Forge</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

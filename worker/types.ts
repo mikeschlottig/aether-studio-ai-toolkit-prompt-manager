@@ -62,3 +62,11 @@ export interface Script {
   description: string;
   updatedAt: number;
 }
+export interface MCPServer {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+  status: 'connected' | 'limited' | 'disconnected';
+  updatedAt: number;
+}

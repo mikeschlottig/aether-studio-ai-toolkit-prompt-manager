@@ -1,21 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-export interface Prompt {
-  id: string;
-  name: string;
-  content: string;
-  tags: string[];
-  version: string;
-  updatedAt: number;
-}
-export interface Script {
-  id: string;
-  name: string;
-  code: string;
-  language: 'python' | 'javascript' | 'sql';
-  description: string;
-  updatedAt: number;
-}
+import type { Prompt, Script, MCPServer } from '../../worker/types';
+export type { Prompt, Script, MCPServer };
 export interface Skill {
   id: string;
   name: string;
@@ -42,6 +28,7 @@ interface AppState {
   scripts: Script[];
   skills: Skill[];
   customTools: CustomTool[];
+  mcpServers: MCPServer[];
   shortcuts: Shortcut[];
   setCommandPaletteOpen: (open: boolean) => void;
   initialize: () => Promise<void>;
@@ -57,15 +44,19 @@ interface AppState {
   addCustomTool: (tool: Omit<CustomTool, 'id' | 'updatedAt'>) => void;
   updateCustomTool: (id: string, updates: Partial<CustomTool>) => void;
   deleteCustomTool: (id: string) => void;
+  addMCPServer: (server: Omit<MCPServer, 'id' | 'updatedAt'>) => void;
+  updateMCPServer: (id: string, updates: Partial<MCPServer>) => void;
+  deleteMCPServer: (id: string) => void;
   updateShortcut: (id: string, key: string) => void;
 }
 const syncWithServer = async (endpoint: string, data: any) => {
   try {
-    await fetch(`/api/${endpoint}`, {
+    const response = await fetch(`/api/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    if (!response.ok) throw new Error(`Sync failed: ${response.status}`);
   } catch (e) {
     console.error(`Failed to sync ${endpoint}`, e);
   }
@@ -79,6 +70,7 @@ export const useAppStore = create<AppState>()(
       scripts: [],
       skills: [],
       customTools: [],
+      mcpServers: [],
       shortcuts: [
         { id: 'toggle-sidebar', action: 'Toggle Sidebar', key: 'b' },
         { id: 'new-chat', action: 'New Chat', key: 'n' },
@@ -87,12 +79,14 @@ export const useAppStore = create<AppState>()(
       setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
       initialize: async () => {
         try {
-          const [pRes, sRes] = await Promise.all([
-            fetch('/api/prompts').then(r => r.json()),
-            fetch('/api/scripts').then(r => r.json())
+          const [pRes, sRes, mRes] = await Promise.all([
+            fetch('/api/prompts').then(r => r.json()).catch(() => ({ success: false })),
+            fetch('/api/scripts').then(r => r.json()).catch(() => ({ success: false })),
+            fetch('/api/mcp').then(r => r.json()).catch(() => ({ success: false }))
           ]);
-          if (pRes.success) set({ prompts: pRes.data });
-          if (sRes.success) set({ scripts: sRes.data });
+          if (pRes.success) set({ prompts: pRes.data || [] });
+          if (sRes.success) set({ scripts: sRes.data || [] });
+          if (mRes.success) set({ mcpServers: mRes.data || [] });
           set({ isHydrated: true });
         } catch (e) {
           console.error('Initialization failed', e);
@@ -128,30 +122,51 @@ export const useAppStore = create<AppState>()(
         set({ scripts: newScripts });
         syncWithServer('scripts', newScripts);
       },
-      addSkill: (s) => set((state) => ({
-        skills: [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.skills]
-      })),
-      updateSkill: (id, updates) => set((state) => ({
-        skills: state.skills.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s)
-      })),
-      deleteSkill: (id) => set((state) => ({
-        skills: state.skills.filter((s) => s.id !== id)
-      })),
-      addCustomTool: (t) => set((state) => ({
-        customTools: [{ ...t, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.customTools]
-      })),
-      updateCustomTool: (id, updates) => set((state) => ({
-        customTools: state.customTools.map((t) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
-      })),
-      deleteCustomTool: (id) => set((state) => ({
-        customTools: state.customTools.filter((t) => t.id !== id)
-      })),
+      addSkill: (s) => {
+        const newSkills = [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...get().skills];
+        set({ skills: newSkills });
+      },
+      updateSkill: (id, updates) => {
+        const newSkills = get().skills.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s);
+        set({ skills: newSkills });
+      },
+      deleteSkill: (id) => {
+        const newSkills = get().skills.filter((s) => s.id !== id);
+        set({ skills: newSkills });
+      },
+      addCustomTool: (t) => {
+        const newTools = [{ ...t, id: crypto.randomUUID(), updatedAt: Date.now() }, ...get().customTools];
+        set({ customTools: newTools });
+      },
+      updateCustomTool: (id, updates) => {
+        const newTools = get().customTools.map((t) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t);
+        set({ customTools: newTools });
+      },
+      deleteCustomTool: (id) => {
+        const newTools = get().customTools.filter((t) => t.id !== id);
+        set({ customTools: newTools });
+      },
+      addMCPServer: (s) => {
+        const newServers = [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...get().mcpServers];
+        set({ mcpServers: newServers });
+        syncWithServer('mcp', newServers);
+      },
+      updateMCPServer: (id, updates) => {
+        const newServers = get().mcpServers.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s);
+        set({ mcpServers: newServers });
+        syncWithServer('mcp', newServers);
+      },
+      deleteMCPServer: (id) => {
+        const newServers = get().mcpServers.filter((s) => s.id !== id);
+        set({ mcpServers: newServers });
+        syncWithServer('mcp', newServers);
+      },
       updateShortcut: (id, key) => set((state) => ({
         shortcuts: state.shortcuts.map((s) => s.id === id ? { ...s, key } : s)
       })),
     }),
     {
-      name: 'aether-studio-persistence-v4',
+      name: 'aether-studio-persistence-v5',
     }
   )
 );

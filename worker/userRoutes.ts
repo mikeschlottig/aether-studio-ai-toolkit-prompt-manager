@@ -63,6 +63,17 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         await controller.saveScripts(scripts);
         return c.json({ success: true });
     });
+    app.get('/api/mcp', async (c) => {
+        const controller = getAppController(c.env);
+        const servers = await controller.getMCPServers();
+        return c.json({ success: true, data: servers });
+    });
+    app.post('/api/mcp', async (c) => {
+        const servers = await c.req.json();
+        const controller = getAppController(c.env);
+        await controller.saveMCPServers(servers);
+        return c.json({ success: true });
+    });
     app.delete('/api/workspace/purge', async (c) => {
         const controller = getAppController(c.env);
         await controller.purgeWorkspace();

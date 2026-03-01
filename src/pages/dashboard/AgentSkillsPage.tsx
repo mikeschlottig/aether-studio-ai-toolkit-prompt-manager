@@ -18,9 +18,9 @@ import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { useAppStore, type Skill } from '@/lib/store'
-import { chatService } from '@/lib/chat'
 import { toast } from '@/components/ui/sonner'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { copyToClipboard } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -45,13 +45,13 @@ export function AgentSkillsPage() {
     s.description.toLowerCase().includes(searchQuery.toLowerCase())
   )
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success('Capability copied to clipboard')
+    copyToClipboard(text, "Capability code copied")
   }
-  const handleTestSkill = (capability: string) => {
-    // In a real app we'd inject this into the message input
-    toast.info('Opening test session with skill context')
-    navigate('/app/assistant')
+  const handleTestSkill = (skill: Skill) => {
+    toast.info(`Preparing assistant session with ${skill.name} context...`)
+    setTimeout(() => {
+      navigate('/app/assistant')
+    }, 800)
   }
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -108,7 +108,7 @@ export function AgentSkillsPage() {
         </div>
         <AnimatePresence mode="wait">
           {skills.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center py-20 bg-muted/10 border-2 border-dashed rounded-3xl"
@@ -139,7 +139,7 @@ export function AgentSkillsPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500" onClick={() => handleTestSkill(skill.capability)}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500" onClick={() => handleTestSkill(skill)}>
                                 <PlayCircle className="w-4 h-4" />
                               </Button>
                             </TooltipTrigger>
@@ -154,7 +154,7 @@ export function AgentSkillsPage() {
                         </Button>
                       </div>
                     </div>
-                    <CardTitle className="text-lg mt-4">{skill.name}</CardTitle>
+                    <CardTitle className="text-lg mt-4 truncate">{skill.name}</CardTitle>
                     <CardDescription className="line-clamp-2">{skill.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex-1 space-y-4">
@@ -165,7 +165,7 @@ export function AgentSkillsPage() {
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <code className="text-xs font-mono block break-all text-indigo-500">{skill.capability}</code>
+                      <code className="text-xs font-mono block break-all text-indigo-500 line-clamp-3">{skill.capability}</code>
                     </div>
                   </CardContent>
                 </Card>
@@ -190,7 +190,7 @@ export function AgentSkillsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredSkills.map((skill) => (
-                      <TableRow key={skill.id}>
+                      <TableRow key={skill.id} className="group">
                         <TableCell>
                           <div>
                             <p className="font-bold">{skill.name}</p>
@@ -198,18 +198,18 @@ export function AgentSkillsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <code className="text-xs font-mono text-indigo-500 bg-indigo-500/5 px-1.5 py-0.5 rounded">{skill.capability}</code>
+                          <code className="text-xs font-mono text-indigo-500 bg-indigo-500/5 px-1.5 py-0.5 rounded">{skill.capability.slice(0, 50)}...</code>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(skill.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500" onClick={() => handleTestSkill(skill.capability)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleTestSkill(skill)}>
                               <PlayCircle className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingSkill(skill); setIsSheetOpen(true); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => { setEditingSkill(skill); setIsSheetOpen(true); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteSkill(skill.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteSkill(skill.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -229,7 +229,7 @@ export function AgentSkillsPage() {
                 <SheetTitle>{editingSkill ? 'Edit Skill' : 'Define Agent Skill'}</SheetTitle>
                 <SheetDescription>Skills are reusable logic primitives that agents can trigger.</SheetDescription>
               </SheetHeader>
-              <div className="flex-1 space-y-6 py-6">
+              <div className="flex-1 space-y-6 py-6 overflow-y-auto">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name</label>
                   <Input name="name" defaultValue={editingSkill?.name} placeholder="e.g. Sentiment Intelligence" required />
@@ -244,13 +244,13 @@ export function AgentSkillsPage() {
                     name="capability"
                     defaultValue={editingSkill?.capability}
                     placeholder="Enter the capability logic or trigger string..."
-                    className="min-h-[200px] font-mono text-sm"
+                    className="min-h-[250px] font-mono text-sm"
                     required
                   />
                 </div>
               </div>
               <SheetFooter className="border-t pt-4">
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
                   {editingSkill ? 'Update Skill' : 'Create Skill'}
                 </Button>
               </SheetFooter>

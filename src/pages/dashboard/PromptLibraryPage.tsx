@@ -21,6 +21,7 @@ import { toast } from '@/components/ui/sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { copyToClipboard } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -43,8 +44,7 @@ export function PromptLibraryPage() {
     p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
   )
   const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content)
-    toast.success('Prompt content copied to clipboard')
+    copyToClipboard(content, "Prompt logic copied")
   }
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -94,16 +94,14 @@ export function PromptLibraryPage() {
             </Button>
           </div>
         </div>
-        <div className="flex items-center gap-4 bg-muted/50 p-2 rounded-xl border">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search library..."
-              className="pl-10 bg-background border-none shadow-none focus-visible:ring-1"
-            />
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search library..."
+            className="pl-10 h-11 bg-muted/30 border-none rounded-xl"
+          />
         </div>
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
@@ -126,16 +124,9 @@ export function PromptLibraryPage() {
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg truncate pr-2">{prompt.name}</CardTitle>
                         <div className="flex gap-1">
-                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content); }}>
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy Prompt</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content); }}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
@@ -168,9 +159,9 @@ export function PromptLibraryPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground pt-4 border-t">
                         <span className="font-mono">{prompt.version}</span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                          Active
+                        <span className="flex items-center gap-1 font-bold text-emerald-500">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          ACTIVE
                         </span>
                       </div>
                     </CardContent>
@@ -219,16 +210,9 @@ export function PromptLibraryPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                             <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(prompt.content)}>
-                                    <Copy className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Copy Prompt</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(prompt.content)}>
+                              <Copy className="w-4 h-4" />
+                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -284,7 +268,7 @@ export function PromptLibraryPage() {
                 </div>
               </div>
               <SheetFooter className="border-t pt-4">
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
                   {editingPrompt ? 'Update Prompt' : 'Create Prompt'}
                 </Button>
               </SheetFooter>

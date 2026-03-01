@@ -1,10 +1,11 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { SessionInfo, Prompt, Script } from './types';
+import type { SessionInfo, Prompt, Script, MCPServer } from './types';
 import type { Env } from './core-utils';
 export class AppController extends DurableObject<Env> {
   private sessions = new Map<string, SessionInfo>();
   private prompts: Prompt[] = [];
   private scripts: Script[] = [];
+  private mcpServers: MCPServer[] = [];
   private loaded = false;
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -15,6 +16,7 @@ export class AppController extends DurableObject<Env> {
       this.sessions = new Map(Object.entries(storedSessions));
       this.prompts = await this.ctx.storage.get<Prompt[]>('prompts') || [];
       this.scripts = await this.ctx.storage.get<Script[]>('scripts') || [];
+      this.mcpServers = await this.ctx.storage.get<MCPServer[]>('mcpServers') || [];
       this.loaded = true;
     }
   }
@@ -90,11 +92,21 @@ export class AppController extends DurableObject<Env> {
     this.scripts = scripts;
     await this.ctx.storage.put('scripts', scripts);
   }
+  async getMCPServers(): Promise<MCPServer[]> {
+    await this.ensureLoaded();
+    return this.mcpServers;
+  }
+  async saveMCPServers(servers: MCPServer[]): Promise<void> {
+    await this.ensureLoaded();
+    this.mcpServers = servers;
+    await this.ctx.storage.put('mcpServers', servers);
+  }
   async purgeWorkspace(): Promise<void> {
     await this.ensureLoaded();
     this.prompts = [];
     this.scripts = [];
+    this.mcpServers = [];
     this.sessions.clear();
-    await this.ctx.storage.delete(['prompts', 'scripts', 'sessions']);
+    await this.ctx.storage.delete(['prompts', 'scripts', 'mcpServers', 'sessions']);
   }
 }

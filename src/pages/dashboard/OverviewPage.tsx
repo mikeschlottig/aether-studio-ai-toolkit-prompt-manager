@@ -18,8 +18,8 @@ import {
   Terminal,
   Library,
   ChevronRight,
-  ScrollText,
-  Brain
+  Brain,
+  HardDrive
 } from 'lucide-react'
 import { chatService } from '@/lib/chat'
 import { useAppStore } from '@/lib/store'
@@ -33,13 +33,13 @@ export function OverviewPage() {
   const scripts = useAppStore(s => s.scripts)
   const skills = useAppStore(s => s.skills)
   const [latencyData] = useState([
-    { time: '10:00', ms: 420 },
-    { time: '11:00', ms: 580 },
-    { time: '12:00', ms: 390 },
-    { time: '13:00', ms: 610 },
-    { time: '14:00', ms: 440 },
-    { time: '15:00', ms: 510 },
-    { time: '16:00', ms: 430 },
+    { time: '08:00', load: 12 },
+    { time: '10:00', load: 45 },
+    { time: '12:00', load: 30 },
+    { time: '14:00', load: 85 },
+    { time: '16:00', load: 40 },
+    { time: '18:00', load: 25 },
+    { time: '20:00', load: 15 },
   ])
   useEffect(() => {
     const fetchSessions = async () => {
@@ -50,33 +50,23 @@ export function OverviewPage() {
     }
     fetchSessions()
   }, [])
+  const storageUsage = (prompts.length * 1.2 + scripts.length * 2.5 + sessions.length * 0.5).toFixed(1)
   const stats = [
-    { label: 'Prompt Assets', value: prompts.length.toString(), change: 'Managed', icon: Library, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Chat Sessions', value: sessions.length.toString(), change: 'Live DO', icon: MessageSquare, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-    { label: 'Agent Skills', value: skills.length.toString(), change: 'Active', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { label: 'System Health', value: 'Optimal', change: 'Stable', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Prompt Library', value: prompts.length.toString(), change: 'Sync: Active', icon: Library, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'Cloud Sessions', value: sessions.length.toString(), change: 'Durable State', icon: MessageSquare, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { label: 'Agent Skills', value: skills.length.toString(), change: 'Runtime', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Storage Est.', value: `${storageUsage} KB`, change: 'Optimal', icon: HardDrive, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
   ]
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-xl p-3 shadow-xl">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Latency Peak</p>
-          <p className="text-sm font-bold text-indigo-500">{payload[0].value} ms</p>
-        </div>
-      )
-    }
-    return null
-  }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-8 md:py-10 lg:py-12 space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Studio Command Center</h1>
-            <p className="text-muted-foreground mt-1">Real-time observability and workspace metrics.</p>
+            <h1 className="text-3xl font-bold tracking-tight">Workspace Telemetry</h1>
+            <p className="text-muted-foreground mt-1">Integrated observability for your Aether Studio assets.</p>
           </div>
           <Badge variant="outline" className="px-3 py-1 bg-indigo-500/5 text-indigo-500 border-indigo-500/20 font-bold">
-            <Zap className="w-3 h-3 mr-2" /> V2.4 RUNTIME
+            <Activity className="w-3 h-3 mr-2" /> LIVE SYNC ENABLED
           </Badge>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -98,10 +88,8 @@ export function OverviewPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground flex items-center mt-2">
-                    <span className="flex items-center text-indigo-500 font-bold">
-                      {stat.change}
-                    </span>
+                  <div className="text-xs text-muted-foreground flex items-center mt-2 font-bold text-indigo-500">
+                    {stat.change}
                   </div>
                 </CardContent>
               </Card>
@@ -110,36 +98,32 @@ export function OverviewPage() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="lg:col-span-2 border-none shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Inference Efficiency</CardTitle>
-                <CardDescription>Response distribution over today's cycle.</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-none h-5">99.8% Uptime</Badge>
-              </div>
+            <CardHeader>
+              <CardTitle>Inference Load</CardTitle>
+              <CardDescription>Activity levels across recent cycles.</CardDescription>
             </CardHeader>
             <CardContent className="h-[320px] pt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={latencyData}>
                   <defs>
-                    <linearGradient id="latencyColor" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="loadColor" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis hide domain={[0, 800]} />
-                  <Tooltip content={<CustomTooltip />} />
+                  <YAxis hide domain={[0, 100]} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                  />
                   <Area
                     type="monotone"
-                    dataKey="ms"
+                    dataKey="load"
                     stroke="#6366f1"
                     strokeWidth={3}
                     fillOpacity={1}
-                    fill="url(#latencyColor)"
-                    animationDuration={1500}
+                    fill="url(#loadColor)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -148,31 +132,24 @@ export function OverviewPage() {
           <Card className="border-none shadow-soft">
             <CardHeader>
               <CardTitle>Quick Launch</CardTitle>
-              <CardDescription>Direct jump to active tools.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
               <Link to="/app/assistant" className="group">
                 <div className="flex items-center justify-between p-4 rounded-xl bg-indigo-500/5 hover:bg-indigo-500/10 border border-indigo-500/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <Terminal className="w-5 h-5 text-indigo-500" />
-                    <div>
-                      <p className="text-sm font-bold">New Task</p>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold opacity-70">Workspace</p>
-                    </div>
+                    <span className="text-sm font-bold">New Mission</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-indigo-500 transform group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-indigo-500" />
                 </div>
               </Link>
               <Link to="/app/prompts" className="group">
                 <div className="flex items-center justify-between p-4 rounded-xl bg-orange-500/5 hover:bg-orange-500/10 border border-orange-500/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <Library className="w-5 h-5 text-orange-500" />
-                    <div>
-                      <p className="text-sm font-bold">Library</p>
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold opacity-70">Assets</p>
-                    </div>
+                    <span className="text-sm font-bold">Asset Manager</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-orange-500 transform group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-orange-500" />
                 </div>
               </Link>
             </CardContent>
@@ -180,24 +157,21 @@ export function OverviewPage() {
           <Card className="lg:col-span-3 border-none shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest managed chat sessions.</CardDescription>
+                <CardTitle>Persistent History</CardTitle>
+                <CardDescription>Managed Durable Object instances.</CardDescription>
               </div>
-              <Link to="/app/assistant" className="text-xs text-indigo-500 font-bold hover:underline">View All Sessions</Link>
+              <Link to="/app/assistant" className="text-xs text-indigo-500 font-bold hover:underline">View Intelligence</Link>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sessions.slice(0, 3).map((session) => (
-                  <div 
-                    key={session.id} 
-                    onClick={() => {
-                      chatService.switchSession(session.id)
-                      navigate('/app/assistant')
-                    }}
+                  <div
+                    key={session.id}
+                    onClick={() => { chatService.switchSession(session.id); navigate('/app/assistant'); }}
                     className="flex flex-col p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-black flex items-center justify-center shadow-sm">
+                      <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shadow-sm">
                         <MessageSquare className="w-4 h-4 text-indigo-500" />
                       </div>
                       <Badge variant="outline" className="text-[10px] opacity-70">
@@ -205,16 +179,8 @@ export function OverviewPage() {
                       </Badge>
                     </div>
                     <p className="text-sm font-bold truncate group-hover:text-indigo-500 transition-colors">{session.title}</p>
-                    <p className="text-[11px] text-muted-foreground mt-1">ID: {session.id.slice(0, 8)}...</p>
                   </div>
                 ))}
-                {sessions.length === 0 && (
-                  <div className="col-span-full py-12 text-center border-2 border-dashed rounded-2xl opacity-40">
-                    <History className="w-12 h-12 mx-auto mb-3" />
-                    <p className="text-sm font-medium">No session history found</p>
-                    <Link to="/app/assistant" className="text-xs text-indigo-500 font-bold mt-2 inline-block underline">Start your first chat</Link>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -10,7 +10,9 @@ import {
   Plus,
   Moon,
   Sun,
-  Zap
+  Zap,
+  FileCode,
+  StickyNote
 } from 'lucide-react'
 import {
   CommandDialog,
@@ -31,6 +33,8 @@ export function CommandPalette() {
   const { toggleTheme } = useTheme()
   const isOpen = useAppStore(s => s.isCommandPaletteOpen)
   const setOpen = useAppStore(s => s.setCommandPaletteOpen)
+  const prompts = useAppStore(s => s.prompts)
+  const scripts = useAppStore(s => s.scripts)
   const handleNavigate = (path: string) => {
     navigate(path)
     setOpen(false)
@@ -48,39 +52,41 @@ export function CommandPalette() {
           Aether Command
         </div>
       </div>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput placeholder="Search everything..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Navigation">
           <CommandItem onSelect={() => handleNavigate('/app/overview')}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             <span>Overview</span>
-            <CommandShortcut>��O</CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => handleNavigate('/app/assistant')}>
             <MessageSquare className="mr-2 h-4 w-4" />
             <span>AI Assistant</span>
-            <CommandShortcut>⌘A</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => handleNavigate('/app/prompts')}>
-            <Library className="mr-2 h-4 w-4" />
-            <span>Prompt Library</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleNavigate('/app/scripts')}>
-            <ScrollText className="mr-2 h-4 w-4" />
-            <span>Script Lab</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleNavigate('/app/agent-skills')}>
-            <Brain className="mr-2 h-4 w-4" />
-            <span>Agent Skills</span>
-          </CommandItem>
-          <CommandItem onSelect={() => handleNavigate('/app/tools')}>
-            <Wrench className="mr-2 h-4 w-4" />
-            <span>Tool Forge</span>
           </CommandItem>
         </CommandGroup>
+        {prompts.length > 0 && (
+          <CommandGroup heading="Prompts">
+            {prompts.map(p => (
+              <CommandItem key={p.id} onSelect={() => handleNavigate(`/app/prompts`)}>
+                <StickyNote className="mr-2 h-4 w-4 text-orange-500" />
+                <span>{p.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+        {scripts.length > 0 && (
+          <CommandGroup heading="Scripts">
+            {scripts.map(s => (
+              <CommandItem key={s.id} onSelect={() => handleNavigate(`/app/scripts`)}>
+                <FileCode className="mr-2 h-4 w-4 text-indigo-500" />
+                <span>{s.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
         <CommandSeparator />
-        <CommandGroup heading="Actions">
+        <CommandGroup heading="Quick Actions">
           <CommandItem onSelect={handleNewChat}>
             <Plus className="mr-2 h-4 w-4" />
             <span>New Chat Session</span>
@@ -89,7 +95,11 @@ export function CommandPalette() {
           <CommandItem onSelect={() => { toggleTheme(); setOpen(false); }}>
             <Sun className="mr-2 h-4 w-4 dark:hidden" />
             <Moon className="mr-2 h-4 w-4 hidden dark:block" />
-            <span>Toggle Theme</span>
+            <span>Toggle Appearance</span>
+          </CommandItem>
+          <CommandItem onSelect={() => handleNavigate('/app/tools')}>
+            <Wrench className="mr-2 h-4 w-4" />
+            <span>Tool Forge Settings</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

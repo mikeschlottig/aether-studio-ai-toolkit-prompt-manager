@@ -1,175 +1,264 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Send, 
-  Bot, 
-  User, 
-  Settings2, 
-  ChevronDown, 
-  Sparkles, 
+import {
+  Send,
+  Bot,
+  User,
+  Settings2,
+  Sparkles,
   Eraser,
-  Loader2
+  Loader2,
+  Plus,
+  MessageSquare,
+  History,
+  Trash2,
+  AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select'
-import { Card } from '@/components/ui/card'
 import { chatService, MODELS } from '@/lib/chat'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { Message, ChatState } from '../../../worker/types'
+import type { Message, SessionInfo } from '../../../worker/types'
 import { toast } from '@/components/ui/sonner'
+import { cn } from '@/lib/utils'
 export function AssistantPage() {
   const [model, setModel] = useState(MODELS[0].id)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
+  const [sessions, setSessions] = useState<SessionInfo[]>([])
+  const [currentSessionId, setCurrentSessionId] = useState<string>(chatService.getSessionId())
   const [isProcessing, setIsProcessing] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    loadMessages()
+  const loadSessions = useCallback(async () => {
+    const res = await chatService.listSessions()
+    if (res.success && res.data) {
+      setSessions(res.data)
+    }
   }, [])
+  const loadMessages = useCallback(async () => {
+    const res = await chatService.getMessages()
+    if (res.success && res.data) {
+      setMessages(res.data.messages)
+    }
+  }, [])
+  useEffect(() => {
+    loadSessions()
+    loadMessages()
+  }, [loadSessions, loadMessages, currentSessionId])
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages])
-  const loadMessages = async () => {
-    const res = await chatService.getMessages()
-    if (res.success && res.data) {
-      setMessages(res.data.messages)
-    }
-  }
   const handleSend = async () => {
     if (!input.trim() || isProcessing) return
     const userMessage = input.trim()
     setInput('')
     setIsProcessing(true)
-    // Optimistic update
-    const tempId = crypto.randomUUID()
-    setMessages(prev => [...prev, {
-      id: tempId,
-      role: 'user',
-      content: userMessage,
-      timestamp: Date.now()
-    }])
+    // Ensure session exists in AppController if it's the first message
+    if (messages.length === 0) {
+      await chatService.createSession(undefined, currentSessionId, userMessage)
+      await loadSessions()
+    }
     const res = await chatService.sendMessage(userMessage, model)
     if (res.success) {
       await loadMessages()
+      await loadSessions() // Refresh activity timestamp
     } else {
       toast.error('Failed to send message')
     }
     setIsProcessing(false)
   }
-  const handleClear = async () => {
-    const res = await chatService.clearMessages()
+  const handleNewChat = () => {
+    chatService.newSession()
+    setCurrentSessionId(chatService.getSessionId())
+    setMessages([])
+  }
+  const switchSession = (id: string) => {
+    chatService.switchSession(id)
+    setCurrentSessionId(id)
+  }
+  const deleteSession = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const res = await chatService.deleteSession(id)
     if (res.success) {
-      setMessages([])
-      toast.success('Conversation cleared')
+      toast.success('Session deleted')
+      loadSessions()
+      if (id === currentSessionId) {
+        handleNewChat()
+      }
     }
   }
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] max-w-5xl mx-auto">
-      {/* Header / Config Bar */}
-      <div className="p-4 border-b flex items-center justify-between bg-card/30 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-64px)]">
+      <div className="flex h-full py-6 gap-6">
+        {/* History Sidebar */}
+        <aside className="hidden md:flex flex-col w-72 bg-card border rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-4 border-b">
+            <Button onClick={handleNewChat} className="w-full justify-start bg-indigo-600 hover:bg-indigo-700" size="sm">
+              <Plus className="w-4 h-4 mr-2" /> New Chat
+            </Button>
           </div>
-          <div>
-            <h2 className="text-sm font-bold leading-tight">AI Assistant</h2>
-            <p className="text-2xs text-muted-foreground">Ready for production</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={model} onValueChange={setModel}>
-            <SelectTrigger className="w-[180px] h-9 text-xs">
-              <Settings2 className="w-3.5 h-3.5 mr-2 opacity-70" />
-              <SelectValue placeholder="Model" />
-            </SelectTrigger>
-            <SelectContent>
-              {MODELS.map(m => (
-                <SelectItem key={m.id} value={m.id} className="text-xs">{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleClear}>
-            <Eraser className="w-4 h-4 opacity-70" />
-          </Button>
-        </div>
-      </div>
-      {/* Message Area */}
-      <div className="flex-1 overflow-hidden relative">
-        <ScrollArea className="h-full px-4">
-          <div className="max-w-3xl mx-auto py-8 space-y-8">
-            <AnimatePresence initial={false}>
-              {messages.length === 0 ? (
-                <div className="text-center py-20 space-y-4 opacity-50">
-                  <Sparkles className="w-12 h-12 mx-auto text-indigo-500" />
-                  <p className="text-sm font-medium">How can I help you today?</p>
+          <ScrollArea className="flex-1 p-2">
+            <div className="space-y-1">
+              {sessions.length === 0 && (
+                <div className="p-4 text-center text-xs text-muted-foreground opacity-50">
+                  No active sessions
                 </div>
-              ) : (
-                messages.map((m) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex gap-4 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
+              )}
+              {sessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => switchSession(session.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all group",
+                    currentSessionId === session.id 
+                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" 
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <MessageSquare className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 text-xs font-medium truncate">{session.title}</span>
+                  <Trash2 
+                    className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 hover:text-destructive hover:opacity-100 transition-all"
+                    onClick={(e) => deleteSession(session.id, e)}
+                  />
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </aside>
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm">
+          {/* Config Header */}
+          <header className="p-4 border-b flex items-center justify-between bg-muted/20 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold leading-tight truncate">
+                  {sessions.find(s => s.id === currentSessionId)?.title || "New Chat"}
+                </h2>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  System context active
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger className="w-[160px] h-8 text-[11px]">
+                  <Settings2 className="w-3 h-3 mr-2 opacity-70" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELS.map(m => (
+                    <SelectItem key={m.id} value={m.id} className="text-[11px]">{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </header>
+          {/* Messages */}
+          <ScrollArea className="flex-1 p-4 lg:p-8">
+            <div className="max-w-3xl mx-auto space-y-8">
+              <AnimatePresence initial={false}>
+                {messages.length === 0 ? (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-20 space-y-6"
                   >
-                    <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${m.role === 'user' ? 'bg-secondary' : 'bg-indigo-600'}`}>
-                      {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-white" />}
+                    <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto text-indigo-500 animate-pulse">
+                      <Sparkles className="w-8 h-8" />
                     </div>
-                    <div className={`space-y-2 max-w-[85%] ${m.role === 'user' ? 'text-right' : ''}`}>
-                      <div className={`inline-block p-4 rounded-2xl text-sm leading-relaxed ${
-                        m.role === 'user' 
-                          ? 'bg-indigo-600 text-white' 
-                          : 'bg-muted border border-border'
-                      }`}>
-                        <div className="whitespace-pre-wrap">{m.content}</div>
-                      </div>
-                      <p className="text-2xs text-muted-foreground px-1">
-                        {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <div>
+                      <h3 className="text-lg font-bold">Aether Intelligence</h3>
+                      <p className="text-sm text-muted-foreground mt-1">Ready to assist with prompts, scripts, or systems.</p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {["Optimize UI", "Fix SQL logic", "Python help"].map(q => (
+                        <Button key={q} variant="outline" size="sm" className="rounded-full text-xs" onClick={() => setInput(q)}>
+                          {q}
+                        </Button>
+                      ))}
                     </div>
                   </motion.div>
-                ))
-              )}
-            </AnimatePresence>
-            <div ref={scrollRef} />
-          </div>
-        </ScrollArea>
-      </div>
-      {/* Input Area */}
-      <div className="p-4 bg-background border-t">
-        <div className="max-w-3xl mx-auto relative flex items-end gap-2 bg-muted rounded-2xl p-2 border border-border focus-within:border-indigo-500/50 transition-colors">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                handleSend()
-              }
-            }}
-            placeholder="Describe a prompt or script..."
-            className="flex-1 min-h-[44px] max-h-40 bg-transparent border-none focus-visible:ring-0 resize-none py-3 px-2 shadow-none"
-          />
-          <Button 
-            onClick={handleSend} 
-            disabled={!input.trim() || isProcessing}
-            size="icon"
-            className="rounded-xl h-10 w-10 shrink-0 bg-indigo-600 hover:bg-indigo-700"
-          >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+                ) : (
+                  messages.map((m) => (
+                    <motion.div
+                      key={m.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={cn("flex gap-4", m.role === 'user' ? 'flex-row-reverse' : '')}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center",
+                        m.role === 'user' ? 'bg-secondary' : 'bg-indigo-600'
+                      )}>
+                        {m.role === 'user' ? <User className="w-4 h-4 text-muted-foreground" /> : <Bot className="w-4 h-4 text-white" />}
+                      </div>
+                      <div className={cn("space-y-1.5 max-w-[85%]", m.role === 'user' ? 'text-right' : '')}>
+                        <div className={cn(
+                          "inline-block p-4 rounded-2xl text-sm leading-relaxed",
+                          m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-muted border border-border'
+                        )}>
+                          <div className="whitespace-pre-wrap">{m.content}</div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground opacity-50 px-1">
+                          {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+              <div ref={scrollRef} />
+            </div>
+          </ScrollArea>
+          {/* Footer Input Area */}
+          <footer className="p-4 bg-background border-t space-y-4">
+            <div className="max-w-3xl mx-auto space-y-4">
+              <div className="relative flex items-end gap-2 bg-muted rounded-2xl p-2 border focus-within:ring-2 ring-indigo-500/20 ring-offset-2 transition-all">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSend()
+                    }
+                  }}
+                  placeholder="Ask Aether something..."
+                  className="flex-1 min-h-[44px] max-h-40 bg-transparent border-none focus-visible:ring-0 resize-none py-3 px-3 shadow-none text-sm"
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isProcessing}
+                  size="icon"
+                  className="rounded-xl h-10 w-10 shrink-0 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20"
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
+              </div>
+              {/* Disclosure Banner */}
+              <div className="flex items-center justify-center gap-2 py-1 bg-amber-500/5 rounded-full border border-amber-500/10 max-w-fit mx-auto px-4">
+                <AlertCircle className="w-3 h-3 text-amber-500" />
+                <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                  AI request limits apply across all apps. Usage is monitored to ensure fair access.
+                </span>
+              </div>
+            </div>
+          </footer>
         </div>
-        <p className="text-[10px] text-center text-muted-foreground mt-3 uppercase tracking-widest font-bold opacity-30">
-          Aether Studio v1.0 • AI-Powered Agency OS
-        </p>
       </div>
     </div>
   )

@@ -10,7 +10,6 @@ import {
   Sun,
   Copy,
   AlertTriangle,
-  Lock,
   Keyboard
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -19,7 +18,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +33,7 @@ import { useTheme } from '@/hooks/use-theme'
 import { chatService } from '@/lib/chat'
 import { useAppStore } from '@/lib/store'
 import { toast } from '@/components/ui/sonner'
+import { copyToClipboard } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -145,11 +144,11 @@ export function SettingsPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <span className="text-xs opacity-50 uppercase font-bold">Cmd +</span>
-                            <Input 
-                              className="w-12 h-8 text-center uppercase font-bold bg-muted/50 border-none" 
-                              value={shortcut.key} 
+                            <Input
+                              className="w-12 h-8 text-center uppercase font-bold bg-muted/50 border-none"
+                              value={shortcut.key}
                               onKeyDown={(e) => handleKeyChange(shortcut.id, e)}
-                              readOnly 
+                              readOnly
                             />
                           </div>
                         </TableCell>
@@ -234,15 +233,15 @@ export function SettingsPage() {
                 <Card className="border-none shadow-soft overflow-hidden">
                   <div className="divide-y border-t">
                     {[
-                      { name: 'OpenAI (Proxy)', key: 'sk-proj-•••••••••••••7a2' },
-                      { name: 'Aether Edge Runtime', key: 'cf-ai-•••••••••••••0x1' },
+                      { name: 'OpenAI (Proxy)', key: 'sk-proj-7a2' },
+                      { name: 'Aether Edge Runtime', key: 'cf-ai-0x1' },
                     ].map((api) => (
                       <div key={api.name} className="p-5 flex items-center justify-between bg-card group">
                         <div>
                           <p className="text-sm font-bold">{api.name}</p>
                           <code className="text-[11px] text-muted-foreground">{api.key}</code>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => { navigator.clipboard.writeText(api.key); toast.success('Key copied'); }}>
+                        <Button variant="ghost" size="icon" onClick={() => copyToClipboard(api.key, "API Key copied to workspace")}>
                           <Copy className="w-4 h-4" />
                         </Button>
                       </div>

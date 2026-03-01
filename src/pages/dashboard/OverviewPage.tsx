@@ -8,23 +8,20 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar
+  ResponsiveContainer
 } from 'recharts'
 import {
-  Zap,
   MessageSquare,
   Activity,
-  History,
-  Terminal,
   Library,
   ChevronRight,
   Brain,
   HardDrive,
   Wifi,
+  WifiOff,
   Clock
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { chatService } from '@/lib/chat'
 import { useAppStore } from '@/lib/store'
 import type { SessionInfo } from '../../../worker/types'
@@ -63,7 +60,6 @@ export function OverviewPage() {
     { label: 'Agent Skills', value: skills.length.toString(), change: 'Runtime', icon: Brain, color: 'text-purple-500', bg: 'bg-purple-500/10' },
     { label: 'Storage Est.', value: `${storageUsage} KB`, change: 'Optimal', icon: HardDrive, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
   ]
-  // Derived activity feed (mocked dates mixed with real names)
   const recentActivities = [
     ...prompts.map(p => ({ type: 'Prompt', name: p.name, time: p.updatedAt })),
     ...scripts.map(s => ({ type: 'Script', name: s.name, time: s.updatedAt }))

@@ -12,7 +12,6 @@ import {
   Trash2,
   AlertCircle,
   Library,
-  Check,
   Menu
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -75,18 +74,23 @@ export function AssistantPage() {
     const userMessage = input.trim()
     setInput('')
     setIsProcessing(true)
-    if (messages.length === 0) {
-      await chatService.createSession(undefined, currentSessionId, userMessage)
-      await loadSessions()
+    try {
+      if (messages.length === 0) {
+        await chatService.createSession(undefined, currentSessionId, userMessage)
+        await loadSessions()
+      }
+      const res = await chatService.sendMessage(userMessage, model)
+      if (res.success) {
+        await loadMessages()
+        await loadSessions()
+      } else {
+        toast.error('Failed to send message')
+      }
+    } catch (err) {
+      toast.error('Critical communication error')
+    } finally {
+      setIsProcessing(false)
     }
-    const res = await chatService.sendMessage(userMessage, model)
-    if (res.success) {
-      await loadMessages()
-      await loadSessions()
-    } else {
-      toast.error('Failed to send message')
-    }
-    setIsProcessing(false)
   }
   const handleInjectPrompt = (content: string) => {
     const cursor = textareaRef.current?.selectionStart || input.length
@@ -123,15 +127,14 @@ export function AssistantPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-64px)] relative">
       <div className="flex h-full py-6 gap-6 relative">
-        {/* Mobile Sidebar Overlay */}
         <AnimatePresence>
           {sidebarOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 z-30 lg:hidden" 
+              className="fixed inset-0 bg-black/60 z-30 lg:hidden"
             />
           )}
         </AnimatePresence>
@@ -322,7 +325,7 @@ export function AssistantPage() {
               <div className="flex items-center justify-center gap-2 py-1 bg-amber-500/5 rounded-full border border-amber-500/10 max-w-fit mx-auto px-4">
                 <AlertCircle className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  Ratelimited Environment • 10/req shared window
+                  Usage Limit: 10 req/min shared pool. Response quality may vary.
                 </span>
               </div>
             </div>

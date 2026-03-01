@@ -78,7 +78,8 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun add react-syntax-highlighter@^15.5.0"
+    "bun add react-syntax-highlighter@^15.5.0",
+    "bun add react-hotkeys-hook@^4.6.0"
 ];
     
     if (commands.length === 0) {

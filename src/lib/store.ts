@@ -36,11 +36,13 @@ export interface Shortcut {
   key: string;
 }
 interface AppState {
+  isCommandPaletteOpen: boolean;
   prompts: Prompt[];
   scripts: Script[];
   skills: Skill[];
   customTools: CustomTool[];
   shortcuts: Shortcut[];
+  setCommandPaletteOpen: (open: boolean) => void;
   addPrompt: (prompt: Omit<Prompt, 'id' | 'updatedAt'>) => void;
   updatePrompt: (id: string, updates: Partial<Prompt>) => void;
   deletePrompt: (id: string) => void;
@@ -58,6 +60,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
+      isCommandPaletteOpen: false,
       prompts: [
         {
           id: '1',
@@ -99,8 +102,9 @@ export const useAppStore = create<AppState>()(
       shortcuts: [
         { id: 'toggle-sidebar', action: 'Toggle Sidebar', key: 'b' },
         { id: 'new-chat', action: 'New Chat', key: 'n' },
-        { id: 'clear-history', action: 'Clear History', key: 'x' },
+        { id: 'command-palette', action: 'Command Palette', key: 'k' },
       ],
+      setCommandPaletteOpen: (open) => set({ isCommandPaletteOpen: open }),
       addPrompt: (p) => set((state) => ({
         prompts: [{ ...p, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.prompts]
       })),
@@ -142,7 +146,7 @@ export const useAppStore = create<AppState>()(
       })),
     }),
     {
-      name: 'aether-studio-storage-v2',
+      name: 'aether-studio-storage-v3',
     }
   )
 );

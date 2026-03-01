@@ -10,7 +10,8 @@ import {
   ChevronUp,
   LogOut,
   CreditCard,
-  Zap
+  Zap,
+  Brain
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import {
@@ -44,7 +45,6 @@ export function AppSidebar(): JSX.Element {
       }
     }
     fetchCount()
-    // Simple interval to keep it reasonably fresh
     const interval = setInterval(fetchCount, 10000)
     return () => clearInterval(interval)
   }, [])
@@ -117,6 +117,18 @@ export function AppSidebar(): JSX.Element {
                 <Link to="/app/scripts">
                   <ScrollText className="w-4 h-4" />
                   <span>Scripts</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === "/app/agent-skills"}
+                tooltip="Agent Skills"
+              >
+                <Link to="/app/agent-skills">
+                  <Brain className="w-4 h-4" />
+                  <span>Agent Skills</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

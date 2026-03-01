@@ -16,15 +16,44 @@ export interface Script {
   description: string;
   updatedAt: number;
 }
+export interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  capability: string;
+  updatedAt: number;
+}
+export interface CustomTool {
+  id: string;
+  name: string;
+  type: 'json' | 'yaml' | 'baml' | 'worker';
+  config: string;
+  updatedAt: number;
+}
+export interface Shortcut {
+  id: string;
+  action: string;
+  key: string;
+}
 interface AppState {
   prompts: Prompt[];
   scripts: Script[];
+  skills: Skill[];
+  customTools: CustomTool[];
+  shortcuts: Shortcut[];
   addPrompt: (prompt: Omit<Prompt, 'id' | 'updatedAt'>) => void;
   updatePrompt: (id: string, updates: Partial<Prompt>) => void;
   deletePrompt: (id: string) => void;
   addScript: (script: Omit<Script, 'id' | 'updatedAt'>) => void;
   updateScript: (id: string, updates: Partial<Script>) => void;
   deleteScript: (id: string) => void;
+  addSkill: (skill: Omit<Skill, 'id' | 'updatedAt'>) => void;
+  updateSkill: (id: string, updates: Partial<Skill>) => void;
+  deleteSkill: (id: string) => void;
+  addCustomTool: (tool: Omit<CustomTool, 'id' | 'updatedAt'>) => void;
+  updateCustomTool: (id: string, updates: Partial<CustomTool>) => void;
+  deleteCustomTool: (id: string) => void;
+  updateShortcut: (id: string, key: string) => void;
 }
 export const useAppStore = create<AppState>()(
   persist(
@@ -57,6 +86,21 @@ export const useAppStore = create<AppState>()(
           updatedAt: Date.now() - 3600000,
         },
       ],
+      skills: [
+        {
+          id: '1',
+          name: 'Emotional Intelligence',
+          description: 'Detects and adapts to the users emotional state in conversation.',
+          capability: 'analyze_sentiment_and_adapt_tone()',
+          updatedAt: Date.now(),
+        }
+      ],
+      customTools: [],
+      shortcuts: [
+        { id: 'toggle-sidebar', action: 'Toggle Sidebar', key: 'b' },
+        { id: 'new-chat', action: 'New Chat', key: 'n' },
+        { id: 'clear-history', action: 'Clear History', key: 'x' },
+      ],
       addPrompt: (p) => set((state) => ({
         prompts: [{ ...p, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.prompts]
       })),
@@ -75,9 +119,30 @@ export const useAppStore = create<AppState>()(
       deleteScript: (id) => set((state) => ({
         scripts: state.scripts.filter((s) => s.id !== id)
       })),
+      addSkill: (s) => set((state) => ({
+        skills: [{ ...s, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.skills]
+      })),
+      updateSkill: (id, updates) => set((state) => ({
+        skills: state.skills.map((s) => s.id === id ? { ...s, ...updates, updatedAt: Date.now() } : s)
+      })),
+      deleteSkill: (id) => set((state) => ({
+        skills: state.skills.filter((s) => s.id !== id)
+      })),
+      addCustomTool: (t) => set((state) => ({
+        customTools: [{ ...t, id: crypto.randomUUID(), updatedAt: Date.now() }, ...state.customTools]
+      })),
+      updateCustomTool: (id, updates) => set((state) => ({
+        customTools: state.customTools.map((t) => t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t)
+      })),
+      deleteCustomTool: (id) => set((state) => ({
+        customTools: state.customTools.filter((t) => t.id !== id)
+      })),
+      updateShortcut: (id, key) => set((state) => ({
+        shortcuts: state.shortcuts.map((s) => s.id === id ? { ...s, key } : s)
+      })),
     }),
     {
-      name: 'aether-studio-storage',
+      name: 'aether-studio-storage-v2',
     }
   )
 );

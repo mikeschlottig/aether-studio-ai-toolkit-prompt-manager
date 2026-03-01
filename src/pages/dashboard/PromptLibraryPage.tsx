@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Plus, 
-  Search, 
-  MoreHorizontal, 
-  Edit, 
-  Trash2, 
-  LayoutGrid, 
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  LayoutGrid,
   Table as TableIcon,
-  Calendar
+  Copy
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +20,7 @@ import { useAppStore, type Prompt } from '@/lib/store'
 import { toast } from '@/components/ui/sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -41,6 +42,10 @@ export function PromptLibraryPage() {
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
   )
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content)
+    toast.success('Prompt content copied to clipboard')
+  }
   const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -70,9 +75,9 @@ export function PromptLibraryPage() {
             <p className="text-muted-foreground mt-1">Manage and version your collection of specialized prompts.</p>
           </div>
           <div className="flex items-center gap-3">
-            <ToggleGroup 
-              type="single" 
-              value={viewMode} 
+            <ToggleGroup
+              type="single"
+              value={viewMode}
               onValueChange={(v) => v && setViewMode(v as 'grid' | 'table')}
               className="bg-muted/50 p-1 rounded-full border"
             >
@@ -102,7 +107,7 @@ export function PromptLibraryPage() {
         </div>
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
-            <motion.div 
+            <motion.div
               key="grid"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -120,25 +125,37 @@ export function PromptLibraryPage() {
                     <CardHeader className="pb-4">
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg truncate pr-2">{prompt.name}</CardTitle>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(prompt)}>
-                              <Edit className="w-4 h-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deletePrompt(prompt.id)} className="text-destructive">
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex gap-1">
+                           <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content); }}>
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Copy Prompt</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(prompt)}>
+                                <Edit className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => deletePrompt(prompt.id)} className="text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <CardDescription>Updated {new Date(prompt.updatedAt).toLocaleDateString()}</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-1 flex flex-col">
+                    <CardContent className="flex-1 flex flex-col" onClick={() => handleEdit(prompt)}>
                       <p className="text-sm text-muted-foreground line-clamp-3 mb-4 flex-1">
                         {prompt.content}
                       </p>
@@ -177,7 +194,7 @@ export function PromptLibraryPage() {
                       <TableHead>Tags</TableHead>
                       <TableHead className="w-[100px]">Version</TableHead>
                       <TableHead className="w-[150px]">Updated</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="text-right w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -200,32 +217,37 @@ export function PromptLibraryPage() {
                         <TableCell className="text-xs text-muted-foreground">
                           {new Date(prompt.updatedAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(prompt)}>
-                                <Edit className="w-3.5 h-3.5 mr-2" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => deletePrompt(prompt.id)} className="text-destructive">
-                                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                             <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleCopy(prompt.content)}>
+                                    <Copy className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Copy Prompt</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(prompt)}>
+                                  <Edit className="w-3.5 h-3.5 mr-2" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => deletePrompt(prompt.id)} className="text-destructive">
+                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredPrompts.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                          No prompts found matching your search.
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </TableBody>
                 </Table>
               </Card>

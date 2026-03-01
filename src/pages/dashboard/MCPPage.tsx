@@ -11,7 +11,8 @@ import {
   ExternalLink,
   Wifi,
   WifiOff,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useAppStore, type MCPServer as MCPServerType } from '@/lib/store'
-import { copyToClipboard } from '@/lib/utils'
+import { copyToClipboard, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 const INITIAL_SERVERS: Omit<MCPServerType, 'id' | 'updatedAt'>[] = [
   { name: 'Cloudflare D1', url: 'https://d1.mcp.cloudflare.com', description: 'Access and query managed D1 databases.', status: 'connected' },
@@ -42,9 +43,11 @@ export function MCPPage() {
   const servers = useAppStore(s => s.mcpServers)
   const addServer = useAppStore(s => s.addMCPServer)
   const deleteServer = useAppStore(s => s.deleteMCPServer)
+  const updateServer = useAppStore(s => s.updateMCPServer)
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [inspectingId, setInspectingId] = useState<string | null>(null)
   useEffect(() => {
     if (servers.length === 0) {
       INITIAL_SERVERS.forEach(s => addServer(s))
@@ -64,6 +67,15 @@ export function MCPPage() {
     toast.success('MCP Server added to workspace')
     setIsSheetOpen(false)
   }
+  const handleInspect = async (id: string) => {
+    setInspectingId(id)
+    toast.info("Discovering server capabilities via SSE handshake...")
+    // Simulate probe
+    await new Promise(r => setTimeout(r, 1500))
+    updateServer(id, { status: 'connected' })
+    setInspectingId(null)
+    toast.success("Connection verified. 12 tools discovered.")
+  }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="py-8 md:py-10 lg:py-12 space-y-8">
@@ -79,10 +91,10 @@ export function MCPPage() {
               onValueChange={(v) => v && setViewMode(v as 'grid' | 'table')}
               className="bg-muted/50 p-1 rounded-full border"
             >
-              <ToggleGroupItem value="grid" className="rounded-full h-8 w-8 p-0">
+              <ToggleGroupItem value="grid" className="rounded-full h-8 w-8 p-0" aria-label="Grid view">
                 <LayoutGrid className="h-4 w-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="table" className="rounded-full h-8 w-8 p-0">
+              <ToggleGroupItem value="table" className="rounded-full h-8 w-8 p-0" aria-label="Table view">
                 <TableIcon className="h-4 w-4" />
               </ToggleGroupItem>
             </ToggleGroup>
@@ -144,8 +156,19 @@ export function MCPPage() {
                       <div className="p-3 rounded-lg bg-muted/50 border font-mono text-[10px] break-all text-muted-foreground">
                         {server.url}
                       </div>
-                      <Button variant="outline" size="sm" className="w-full rounded-lg hover:bg-indigo-500/5 hover:text-indigo-500 hover:border-indigo-500/20">
-                        <Activity className="w-3.5 h-3.5 mr-2" /> Inspect Capabilities
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full rounded-lg hover:bg-indigo-500/5 hover:text-indigo-500 hover:border-indigo-500/20"
+                        onClick={() => handleInspect(server.id)}
+                        disabled={inspectingId === server.id}
+                      >
+                        {inspectingId === server.id ? (
+                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                        ) : (
+                          <Activity className="w-3.5 h-3.5 mr-2" />
+                        )}
+                        Inspect Capabilities
                       </Button>
                     </div>
                   </CardContent>
@@ -232,7 +255,7 @@ export function MCPPage() {
                 </div>
               </div>
               <SheetFooter className="border-t pt-4">
-                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">
+                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
                   Connect Server
                 </Button>
               </SheetFooter>

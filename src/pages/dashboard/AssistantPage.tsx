@@ -12,7 +12,8 @@ import {
   Trash2,
   AlertCircle,
   Library,
-  Check
+  Check,
+  Menu
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -42,6 +43,7 @@ export function AssistantPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string>(chatService.getSessionId())
   const [isProcessing, setIsProcessing] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const prompts = useAppStore(s => s.prompts)
@@ -98,12 +100,14 @@ export function AssistantPage() {
     const nextId = chatService.getSessionId()
     setCurrentSessionId(nextId)
     setMessages([])
+    setSidebarOpen(false)
     toast.info('New session initialized')
   }
   const switchSession = (id: string) => {
     if (id === currentSessionId) return
     chatService.switchSession(id)
     setCurrentSessionId(id)
+    setSidebarOpen(false)
   }
   const deleteSession = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -117,12 +121,30 @@ export function AssistantPage() {
     }
   }
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-64px)]">
-      <div className="flex h-full py-6 gap-6">
-        <aside className="hidden md:flex flex-col w-72 bg-card border rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-4 border-b">
-            <Button onClick={handleNewChat} className="w-full justify-start bg-indigo-600 hover:bg-indigo-700" size="sm">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[calc(100vh-64px)] relative">
+      <div className="flex h-full py-6 gap-6 relative">
+        {/* Mobile Sidebar Overlay */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black/60 z-30 lg:hidden" 
+            />
+          )}
+        </AnimatePresence>
+        <aside className={cn(
+          "fixed inset-y-0 left-0 z-40 w-72 bg-card border-r lg:relative lg:border lg:rounded-2xl lg:z-0 flex flex-col transition-transform duration-300 shadow-xl lg:shadow-sm overflow-hidden",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}>
+          <div className="p-4 border-b flex items-center justify-between">
+            <Button onClick={handleNewChat} className="flex-1 justify-start bg-indigo-600 hover:bg-indigo-700" size="sm">
               <Plus className="w-4 h-4 mr-2" /> New Chat
+            </Button>
+            <Button variant="ghost" size="icon" className="lg:hidden ml-2" onClick={() => setSidebarOpen(false)}>
+              <Trash2 className="w-4 h-4" />
             </Button>
           </div>
           <ScrollArea className="flex-1 p-2">
@@ -156,28 +178,30 @@ export function AssistantPage() {
           </ScrollArea>
         </aside>
         <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm">
-          <header className="p-4 border-b flex items-center justify-between bg-muted/20 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <header className="p-3 lg:p-4 border-b flex items-center justify-between bg-muted/20 backdrop-blur-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <Button variant="ghost" size="icon" className="lg:hidden shrink-0 h-8 w-8" onClick={() => setSidebarOpen(true)}>
+                <Menu className="w-4 h-4" />
+              </Button>
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 hidden sm:flex">
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-sm font-bold leading-tight truncate">
-                  {sessions.find(s => s.id === currentSessionId)?.title || "New Chat"}
+                <h2 className="text-xs lg:text-sm font-bold leading-tight truncate">
+                  {sessions.find(s => s.id === currentSessionId)?.title || "Aether Session"}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <p className="text-[9px] lg:text-[10px] text-muted-foreground flex items-center gap-1">
+                    <span className="w-1 h-1 lg:w-1.5 lg:h-1.5 rounded-full bg-emerald-500" />
                     Agent Engine Active
                   </p>
-                  <Badge variant="outline" className="h-4 text-[9px] px-1.5 font-bold text-amber-500 border-amber-500/20 bg-amber-500/5">RATELIMITED</Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Select value={model} onValueChange={setModel}>
-                <SelectTrigger className="w-[160px] h-8 text-[11px]">
-                  <Settings2 className="w-3 h-3 mr-2 opacity-70" />
+                <SelectTrigger className="w-[100px] sm:w-[160px] h-7 lg:h-8 text-[10px] lg:text-[11px]">
+                  <Settings2 className="w-3 h-3 mr-1 lg:mr-2 opacity-70 hidden xs:block" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -202,7 +226,7 @@ export function AssistantPage() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold">Aether Intelligence</h3>
-                      <p className="text-sm text-muted-foreground mt-1">Select a prompt template or start typing.</p>
+                      <p className="text-sm text-muted-foreground mt-1 px-4">Initialize the session with a prompt from your library or a custom query.</p>
                     </div>
                   </motion.div>
                 ) : (
@@ -224,9 +248,9 @@ export function AssistantPage() {
                           "inline-block p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
                           m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-muted border border-border'
                         )}>
-                          <div className="whitespace-pre-wrap">{m.content}</div>
+                          <div className="whitespace-pre-wrap text-left">{m.content}</div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground opacity-50 px-1 font-medium">
+                        <p className="text-[10px] text-muted-foreground opacity-50 px-1 font-medium uppercase tracking-tighter">
                           {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -247,11 +271,18 @@ export function AssistantPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-0" side="top" align="start">
-                    <div className="p-3 border-b bg-muted/50">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Prompt Library</p>
+                    <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Context Injection</p>
+                      <Badge variant="outline" className="text-[9px]">{prompts.length}</Badge>
                     </div>
                     <ScrollArea className="h-64">
                       <div className="p-1">
+                        {prompts.length === 0 && (
+                          <div className="p-8 text-center opacity-40">
+                            <Library className="w-6 h-6 mx-auto mb-2" />
+                            <p className="text-[10px] font-bold uppercase">No Prompts Found</p>
+                          </div>
+                        )}
                         {prompts.map(p => (
                           <button
                             key={p.id}
@@ -276,7 +307,7 @@ export function AssistantPage() {
                       handleSend()
                     }
                   }}
-                  placeholder="Ask Aether something..."
+                  placeholder="Query workspace or assistant..."
                   className="flex-1 min-h-[44px] max-h-40 bg-transparent border-none focus-visible:ring-0 resize-none py-3 px-1 shadow-none text-sm"
                 />
                 <Button
@@ -291,7 +322,7 @@ export function AssistantPage() {
               <div className="flex items-center justify-center gap-2 py-1 bg-amber-500/5 rounded-full border border-amber-500/10 max-w-fit mx-auto px-4">
                 <AlertCircle className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  Usage limits are shared. 10 requests / 5 mins suggested for stability.
+                  Ratelimited Environment • 10/req shared window
                 </span>
               </div>
             </div>

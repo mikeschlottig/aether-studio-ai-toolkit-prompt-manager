@@ -61,8 +61,7 @@ class ChatService {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return await response.json();
     } catch (error) {
-      console.error('Failed to get messages:', error);
-      return { success: false, error: 'Failed to load messages' };
+      return { success: false, data: { messages: [] } as ChatState };
     }
   }
   async clearMessages(): Promise<ChatResponse> {

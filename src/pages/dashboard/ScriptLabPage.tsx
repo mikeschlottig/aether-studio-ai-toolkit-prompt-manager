@@ -12,7 +12,9 @@ import {
   FileCode,
   Edit,
   Copy,
-  CheckCircle
+  CheckCircle,
+  ChevronRight,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,6 +24,8 @@ import { useAppStore, type Script } from '@/lib/store'
 import { toast } from '@/components/ui/sonner'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Separator } from '@/components/ui/separator'
+
 export function ScriptLabPage() {
   const scripts = useAppStore(s => s.scripts)
   const addScript = useAppStore(s => s.addScript)
@@ -31,6 +35,12 @@ export function ScriptLabPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
   const [consoleOutput, setConsoleOutput] = useState<string[]>([])
+  
+  React.useEffect(() => {
+    if (activeScript) {
+      setEditValue(activeScript.code)
+    }
+  }, [activeScript])
   const handleRun = () => {
     if (!activeScript) return
     setConsoleOutput(prev => [`[${new Date().toLocaleTimeString()}] Executing ${activeScript.name}...`, ...prev])
@@ -194,4 +204,3 @@ export function ScriptLabPage() {
     </div>
   )
 }
-import { Separator } from '@/components/ui/separator'

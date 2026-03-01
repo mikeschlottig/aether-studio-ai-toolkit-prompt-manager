@@ -77,11 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun add react-syntax-highlighter@^15.5.0",
-    "bun add react-hotkeys-hook@^4.6.0",
-    "bun add react-hotkeys-hook@latest"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');

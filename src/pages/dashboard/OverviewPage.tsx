@@ -78,12 +78,12 @@ export function OverviewPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground flex items-center mt-2">
+                  <div className="text-xs text-muted-foreground flex items-center mt-2">
                     <Badge variant="outline" className="mr-2 h-5 border-emerald-500/20 text-emerald-500 bg-emerald-500/5">
                       {stat.change}
                     </Badge>
                     vs previous period
-                  </p>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>

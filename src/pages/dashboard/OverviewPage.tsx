@@ -14,19 +14,22 @@ import {
   Zap,
   MessageSquare,
   Clock,
-  ArrowUpRight,
   Activity,
   History,
   Terminal,
   Library,
-  ChevronRight
+  ChevronRight,
+  ScrollText
 } from 'lucide-react'
 import { chatService } from '@/lib/chat'
+import { useAppStore } from '@/lib/store'
 import type { SessionInfo } from '../../../worker/types'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 export function OverviewPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([])
+  const prompts = useAppStore(s => s.prompts)
+  const scripts = useAppStore(s => s.scripts)
   const [latencyData] = useState([
     { time: '10:00', ms: 420 },
     { time: '11:00', ms: 580 },
@@ -46,10 +49,10 @@ export function OverviewPage() {
     fetchSessions()
   }, [])
   const stats = [
-    { label: 'AI Requests', value: '1,284', change: '+12.5%', icon: Zap, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Chat Sessions', value: sessions.length.toString(), change: '+3.2%', icon: MessageSquare, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-    { label: 'Avg Latency', value: '484ms', change: '-40ms', icon: Clock, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'Connected Tools', value: '3', change: 'Stable', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Prompt Library', value: prompts.length.toString(), change: 'Real-time', icon: Library, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'Chat Sessions', value: sessions.length.toString(), change: 'Live DO', icon: MessageSquare, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { label: 'Active Scripts', value: scripts.length.toString(), change: 'Custom logic', icon: ScrollText, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'System Health', value: 'Optimal', change: 'Stable', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/10' },
   ]
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -79,10 +82,9 @@ export function OverviewPage() {
                 <CardContent>
                   <div className="text-3xl font-bold">{stat.value}</div>
                   <div className="text-xs text-muted-foreground flex items-center mt-2">
-                    <Badge variant="outline" className="mr-2 h-5 border-emerald-500/20 text-emerald-500 bg-emerald-500/5">
+                    <Badge variant="outline" className="mr-2 h-5 border-indigo-500/20 text-indigo-500 bg-indigo-500/5">
                       {stat.change}
                     </Badge>
-                    vs previous period
                   </div>
                 </CardContent>
               </Card>
@@ -91,12 +93,12 @@ export function OverviewPage() {
         </div>
         {/* Main Content Area */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Latency Chart */}
+          {/* Efficiency Chart */}
           <Card className="lg:col-span-2 border-none shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>System Efficiency</CardTitle>
-                <CardDescription>Response latency distribution over today's cycle.</CardDescription>
+                <CardTitle>Inference Efficiency</CardTitle>
+                <CardDescription>Response distribution over today's cycle.</CardDescription>
               </div>
               <Badge variant="secondary" className="bg-secondary/50">LIVE</Badge>
             </CardHeader>
@@ -112,7 +114,7 @@ export function OverviewPage() {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="time" hide />
                   <YAxis hide domain={[0, 800]} />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                   />
                   <Area
@@ -128,7 +130,7 @@ export function OverviewPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          {/* Quick Actions */}
+          {/* Quick Launch */}
           <Card className="border-none shadow-soft">
             <CardHeader>
               <CardTitle>Quick Launch</CardTitle>
@@ -173,7 +175,7 @@ export function OverviewPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sessions.slice(0, 3).map((session) => (
-                  <div key={session.id} className="flex flex-col p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer group">
+                  <div key={session.id} onClick={() => window.location.href=`/app/assistant`} className="flex flex-col p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors cursor-pointer group">
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-8 h-8 rounded-lg bg-white dark:bg-black flex items-center justify-center shadow-sm">
                         <MessageSquare className="w-4 h-4 text-indigo-500" />

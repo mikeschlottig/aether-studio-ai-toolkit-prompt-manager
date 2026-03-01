@@ -6,19 +6,19 @@ import {
   Shield,
   Trash2,
   Plus,
-  Monitor,
   Moon,
   Sun,
   Copy,
   AlertTriangle,
   Lock
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,9 +36,15 @@ import { toast } from '@/components/ui/sonner'
 export function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
   const handleClearAll = async () => {
-    const res = await chatService.clearAllSessions()
-    if (res.success) {
-      toast.success(`Purge complete: ${res.data?.deletedCount} sessions cleared.`)
+    try {
+      const res = await chatService.clearAllSessions()
+      if (res.success) {
+        toast.success(`Purge complete: ${res.data?.deletedCount} sessions cleared.`)
+      } else {
+        toast.error('Failed to clear sessions')
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred during purge')
     }
   }
   return (
@@ -114,7 +120,7 @@ export function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <button
-                    onClick={() => !isDark && toggleTheme()}
+                    onClick={() => isDark && toggleTheme()}
                     className={`p-6 rounded-2xl border-2 text-left space-y-4 transition-all group ${!isDark ? 'border-indigo-600 bg-indigo-50/50' : 'border-border hover:border-indigo-500/30 bg-muted/20'}`}
                   >
                     <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm border">
@@ -126,7 +132,7 @@ export function SettingsPage() {
                     </div>
                   </button>
                   <button
-                    onClick={() => isDark && toggleTheme()}
+                    onClick={() => !isDark && toggleTheme()}
                     className={`p-6 rounded-2xl border-2 text-left space-y-4 transition-all group ${isDark ? 'border-indigo-600 bg-indigo-500/5' : 'border-border hover:border-indigo-500/30 bg-muted/20'}`}
                   >
                     <div className="w-12 h-12 rounded-xl bg-black flex items-center justify-center shadow-sm border border-white/10">
@@ -146,7 +152,7 @@ export function SettingsPage() {
                   <h3 className="text-lg font-bold">Data Sovereignty</h3>
                   <p className="text-sm text-muted-foreground">Manage your session data and access permissions.</p>
                 </div>
-                <Card className="border-destructive/20 bg-destructive/5 overflow-hidden">
+                <Card className="border-destructive/20 bg-destructive/5 overflow-hidden border">
                   <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <div className="flex gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center shrink-0">
@@ -234,4 +240,3 @@ export function SettingsPage() {
     </div>
   )
 }
-import { Badge } from '@/components/ui/badge'

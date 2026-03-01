@@ -17,6 +17,9 @@ import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { OverviewPage } from '@/pages/dashboard/OverviewPage'
 import { AssistantPage } from '@/pages/dashboard/AssistantPage'
 import { PromptLibraryPage } from '@/pages/dashboard/PromptLibraryPage'
+import { ScriptLabPage } from '@/pages/dashboard/ScriptLabPage'
+import { ToolForgePage } from '@/pages/dashboard/ToolForgePage'
+import { SettingsPage } from '@/pages/dashboard/SettingsPage'
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
   {
@@ -33,6 +36,9 @@ const router = createBrowserRouter([
       { path: "overview", element: <OverviewPage /> },
       { path: "assistant", element: <AssistantPage /> },
       { path: "prompts", element: <PromptLibraryPage /> },
+      { path: "scripts", element: <ScriptLabPage /> },
+      { path: "tools", element: <ToolForgePage /> },
+      { path: "settings", element: <SettingsPage /> },
     ]
   }
 ]);

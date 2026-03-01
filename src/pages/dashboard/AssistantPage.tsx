@@ -6,11 +6,9 @@ import {
   User,
   Settings2,
   Sparkles,
-  Eraser,
   Loader2,
   Plus,
   MessageSquare,
-  History,
   Trash2,
   AlertCircle
 } from 'lucide-react'
@@ -46,6 +44,8 @@ export function AssistantPage() {
     const res = await chatService.getMessages()
     if (res.success && res.data) {
       setMessages(res.data.messages)
+    } else {
+      setMessages([])
     }
   }, [])
   useEffect(() => {
@@ -62,7 +62,6 @@ export function AssistantPage() {
     const userMessage = input.trim()
     setInput('')
     setIsProcessing(true)
-    // Ensure session exists in AppController if it's the first message
     if (messages.length === 0) {
       await chatService.createSession(undefined, currentSessionId, userMessage)
       await loadSessions()
@@ -70,7 +69,7 @@ export function AssistantPage() {
     const res = await chatService.sendMessage(userMessage, model)
     if (res.success) {
       await loadMessages()
-      await loadSessions() // Refresh activity timestamp
+      await loadSessions() 
     } else {
       toast.error('Failed to send message')
     }
@@ -78,10 +77,13 @@ export function AssistantPage() {
   }
   const handleNewChat = () => {
     chatService.newSession()
-    setCurrentSessionId(chatService.getSessionId())
+    const nextId = chatService.getSessionId()
+    setCurrentSessionId(nextId)
     setMessages([])
+    toast.info('New session initialized')
   }
   const switchSession = (id: string) => {
+    if (id === currentSessionId) return
     chatService.switchSession(id)
     setCurrentSessionId(id)
   }
@@ -89,7 +91,7 @@ export function AssistantPage() {
     e.stopPropagation()
     const res = await chatService.deleteSession(id)
     if (res.success) {
-      toast.success('Session deleted')
+      toast.success('Session removed')
       loadSessions()
       if (id === currentSessionId) {
         handleNewChat()
@@ -109,8 +111,9 @@ export function AssistantPage() {
           <ScrollArea className="flex-1 p-2">
             <div className="space-y-1">
               {sessions.length === 0 && (
-                <div className="p-4 text-center text-xs text-muted-foreground opacity-50">
-                  No active sessions
+                <div className="p-8 text-center space-y-2 opacity-40">
+                  <MessageSquare className="w-8 h-8 mx-auto" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest">No History</p>
                 </div>
               )}
               {sessions.map((session) => (
@@ -119,14 +122,14 @@ export function AssistantPage() {
                   onClick={() => switchSession(session.id)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all group",
-                    currentSessionId === session.id 
-                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" 
+                    currentSessionId === session.id
+                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                       : "hover:bg-muted text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <MessageSquare className="w-4 h-4 shrink-0" />
                   <span className="flex-1 text-xs font-medium truncate">{session.title}</span>
-                  <Trash2 
+                  <Trash2
                     className="w-3.5 h-3.5 opacity-0 group-hover:opacity-50 hover:text-destructive hover:opacity-100 transition-all"
                     onClick={(e) => deleteSession(session.id, e)}
                   />
@@ -137,7 +140,6 @@ export function AssistantPage() {
         </aside>
         {/* Chat Area */}
         <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm">
-          {/* Config Header */}
           <header className="p-4 border-b flex items-center justify-between bg-muted/20 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
@@ -149,7 +151,7 @@ export function AssistantPage() {
                 </h2>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  System context active
+                  Cloudflare Agent Active
                 </p>
               </div>
             </div>
@@ -167,12 +169,11 @@ export function AssistantPage() {
               </Select>
             </div>
           </header>
-          {/* Messages */}
           <ScrollArea className="flex-1 p-4 lg:p-8">
             <div className="max-w-3xl mx-auto space-y-8">
               <AnimatePresence initial={false}>
                 {messages.length === 0 ? (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="text-center py-20 space-y-6"
@@ -201,19 +202,19 @@ export function AssistantPage() {
                       className={cn("flex gap-4", m.role === 'user' ? 'flex-row-reverse' : '')}
                     >
                       <div className={cn(
-                        "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center",
+                        "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center shadow-sm",
                         m.role === 'user' ? 'bg-secondary' : 'bg-indigo-600'
                       )}>
                         {m.role === 'user' ? <User className="w-4 h-4 text-muted-foreground" /> : <Bot className="w-4 h-4 text-white" />}
                       </div>
                       <div className={cn("space-y-1.5 max-w-[85%]", m.role === 'user' ? 'text-right' : '')}>
                         <div className={cn(
-                          "inline-block p-4 rounded-2xl text-sm leading-relaxed",
+                          "inline-block p-4 rounded-2xl text-sm leading-relaxed shadow-sm",
                           m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-muted border border-border'
                         )}>
                           <div className="whitespace-pre-wrap">{m.content}</div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground opacity-50 px-1">
+                        <p className="text-[10px] text-muted-foreground opacity-50 px-1 font-medium">
                           {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -224,7 +225,6 @@ export function AssistantPage() {
               <div ref={scrollRef} />
             </div>
           </ScrollArea>
-          {/* Footer Input Area */}
           <footer className="p-4 bg-background border-t space-y-4">
             <div className="max-w-3xl mx-auto space-y-4">
               <div className="relative flex items-end gap-2 bg-muted rounded-2xl p-2 border focus-within:ring-2 ring-indigo-500/20 ring-offset-2 transition-all">
@@ -249,11 +249,10 @@ export function AssistantPage() {
                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </Button>
               </div>
-              {/* Disclosure Banner */}
               <div className="flex items-center justify-center gap-2 py-1 bg-amber-500/5 rounded-full border border-amber-500/10 max-w-fit mx-auto px-4">
                 <AlertCircle className="w-3 h-3 text-amber-500" />
                 <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                  AI request limits apply across all apps. Usage is monitored to ensure fair access.
+                  AI usage is monitored. Request limits apply to ensure system stability.
                 </span>
               </div>
             </div>

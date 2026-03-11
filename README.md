@@ -1,6 +1,6 @@
 # Aether Studio
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/aether-studio-ai-toolkit-prompt-manager)
 
 A production-ready **Cloudflare Workers** template for building **AI agent chat applications** with intelligent tool usage, multi-model support, and **Model Context Protocol (MCP)** integration. Features real-time streaming conversations, session management via Durable Objects, and seamless Cloudflare deployment.
 
@@ -149,7 +149,7 @@ Deploy to Cloudflare Workers in **one command**:
 bun run deploy
 ```
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/mikeschlottig/aether-studio-ai-toolkit-prompt-manager)
 
 **Production Ready Features**:
 - Zero-config SPA asset handling
